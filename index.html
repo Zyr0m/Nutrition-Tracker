@@ -31,7 +31,7 @@
         .percentage { fill: #fff; font-family: sans-serif; font-size: 0.5em; text-anchor: middle; font-weight: bold; }
         .subtext { fill: #aaa; font-family: sans-serif; font-size: 0.2em; text-anchor: middle; }
         .modal-bg { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        ::-webkit-scrollbar { display: none; } /* Hide all scrollbars */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
@@ -108,6 +108,14 @@
                 <button onclick="openManualModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-lg">
                     ✍️ Manuell
                 </button>
+            </section>
+
+            <!-- Favorites Section (Schnellwahl) -->
+            <section id="favorites-section" class="bg-cardbg rounded-2xl p-4 border border-gray-800 shadow-lg hidden">
+                <h2 class="font-bold text-sm text-gray-400 mb-3 uppercase tracking-wider">Favoriten (Schnellwahl)</h2>
+                <div id="fav-list" class="flex overflow-x-auto gap-3 pb-2 snap-x">
+                    <!-- Favorite items injected here -->
+                </div>
             </section>
 
             <!-- Food List -->
@@ -227,7 +235,7 @@
         <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700">
             <div class="p-4 border-b border-gray-800 flex justify-between items-center">
                 <h3 class="font-bold">Barcode scannen</h3>
-                <button onclick="stopScanner()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                <button onclick="closeModals()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
             <div id="reader" class="w-full bg-black min-h-[250px]"></div>
             <div class="p-4 text-center text-sm text-gray-400" id="scanner-status">
@@ -257,6 +265,12 @@
             <div class="bg-gray-800 rounded-lg p-3 mb-4 text-sm flex justify-between items-center border border-gray-700">
                 <span class="text-gray-300">Wird hinzugefügt:</span><span class="font-bold text-brand" id="preview-kcal">0 kcal</span>
             </div>
+            
+            <div class="mb-4 flex items-center">
+                <input type="checkbox" id="food-save-fav" class="w-4 h-4 accent-brand rounded mr-2">
+                <label for="food-save-fav" class="text-sm text-gray-300">Als Favorit (Schnellwahl) speichern</label>
+            </div>
+
             <button onclick="saveFood()" class="w-full bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl transition">Speichern</button>
         </div>
     </div>
@@ -272,19 +286,29 @@
             <input type="text" id="routine-name" placeholder="z.B. Push Day" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4">
             
             <label class="text-sm text-gray-400 mb-1 block">Übungen (eine pro Zeile)</label>
-            <textarea id="routine-exercises" rows="4" placeholder="- Bankdrücken 3x10
-- Schulterdrücken 3x10
-- Trizeps..." class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4 focus:outline-none"></textarea>
+            <textarea id="routine-exercises" rows="3" placeholder="- Bankdrücken 3x10
+- Schulterdrücken 3x10..." class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4 focus:outline-none"></textarea>
             
-            <label class="text-sm text-gray-400 mb-1 block">Standard Dauer (Minuten)</label>
-            <input type="number" id="routine-mins" placeholder="z.B. 90" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4">
-            
-            <label class="text-sm text-gray-400 mb-1 block">Intensität</label>
-            <select id="routine-type" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-6">
-                <option value="4.5">Krafttraining (Mittel)</option>
-                <option value="6.0">Krafttraining (Intensiv)</option>
-                <option value="8.0">HIIT / Extrem (Sehr Hoch)</option>
-            </select>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="text-sm text-gray-400 mb-1 block">Dauer (Min.)</label>
+                    <input type="number" id="routine-mins" placeholder="z.B. 90" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-400 mb-1 block">Intensität</label>
+                    <select id="routine-type" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white">
+                        <option value="4.5">Mittel</option>
+                        <option value="6.0">Intensiv</option>
+                        <option value="8.0">Sehr Hoch</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-3 rounded-lg border border-gray-700 mb-6">
+                <label class="text-xs text-brandlight font-bold mb-1 block">ODER: Feste Kalorien eintragen</label>
+                <p class="text-[10px] text-gray-400 mb-2">Überschreibt die automatische Berechnung oben.</p>
+                <input type="number" id="routine-explicit-kcal" placeholder="z.B. 450 kcal" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white">
+            </div>
 
             <button onclick="saveRoutine()" class="w-full bg-brandpurple hover:bg-purple-400 text-white font-bold py-3 rounded-xl transition shadow-lg">Routine speichern</button>
         </div>
@@ -300,6 +324,7 @@
             <div class="bg-appbg border border-gray-800 rounded-lg p-4 mb-4 whitespace-pre-wrap text-sm text-gray-300" id="view-routine-exercises">
                 <!-- Exercises listed here -->
             </div>
+            <p class="text-xs text-gray-400 mb-4 text-center" id="view-routine-stats"></p>
             <div class="flex gap-2">
                 <button onclick="logRoutineFromView()" class="flex-1 bg-brandblue hover:bg-blue-400 text-white font-bold py-3 rounded-xl transition">Als Workout eintragen</button>
                 <button onclick="deleteCurrentRoutine()" class="bg-red-500 hover:bg-red-400 text-white font-bold px-4 rounded-xl transition">🗑️</button>
@@ -309,19 +334,19 @@
 
     <script>
         // --- State Management ---
-        // Generiere das Datum im deutschen Format für die Anzeige
         const todayObj = new Date();
         const TODAY = todayObj.toISOString().split('T')[0];
         const dateString = todayObj.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
-        document.getElementById('header-date').innerText = dateString;
+        document.getElementById('header-date').textContent = dateString;
 
-        // Base Data Structure (v3)
+        // Base Data Structure (v4)
         let state = {
-            version: 3,
+            version: 4,
             user: { weight: 80, targetWeight: 75, targetDate: '' },
             goals: { kcal: 2400, carbs: 250, protein: 160, fat: 70, sugar: 50 },
-            routines: [], // Array of objects: { name, exercises, mins, met }
-            history: {}   // Key: 'YYYY-MM-DD' => Value: { foods: [], workouts: [], supps: {} }
+            routines: [], // { name, exercises, mins, met, explicitKcal }
+            favorites: [], // { name, amount, kcal100... }
+            history: {}   
         };
 
         let activeRoutineIndex = null;
@@ -339,29 +364,9 @@
         function migrateAndLoadState() {
             const savedV3 = localStorage.getItem('nutriTrackerV3');
             if (savedV3) {
-                state = JSON.parse(savedV3);
-            } else {
-                // Migration from v2 if exists
-                const savedV2 = localStorage.getItem('nutriTrackerState2');
-                if (savedV2) {
-                    const parsed = JSON.parse(savedV2);
-                    state.user = parsed.user || state.user;
-                    state.goals = parsed.goals || state.goals;
-                    // Move their current day foods/workouts into history under TODAY
-                    if (parsed.date) {
-                        state.history[parsed.date] = {
-                            foods: parsed.foods || [],
-                            workouts: parsed.workouts || [],
-                            supps: parsed.supps || {
-                                creatine: { name: 'Kreatin', done: false },
-                                vitD: { name: 'Vit D3+K2', done: false },
-                                magnesium: { name: 'Magnesium', done: false },
-                                omega3: { name: 'Omega-3', done: false }
-                            }
-                        };
-                    }
-                    localStorage.setItem('nutriTrackerV3', JSON.stringify(state));
-                }
+                const parsed = JSON.parse(savedV3);
+                state = { ...state, ...parsed }; // merge keys
+                if(!state.favorites) state.favorites = [];
             }
         }
 
@@ -382,7 +387,7 @@
         }
 
         function saveState() {
-            localStorage.setItem('nutriTrackerV3', JSON.stringify(state));
+            localStorage.setItem('nutriTrackerV3', JSON.stringify(state)); // Keeping key same to preserve user data smoothly
         }
 
         // --- Tabs ---
@@ -405,7 +410,7 @@
             activeBtn.classList.add(highlightColor, 'font-bold');
             
             const titles = { diary: 'Tagebuch', workout: 'Workout', history: 'Verlauf', goals: 'Ziele' };
-            document.getElementById('header-title').innerText = titles[tabId];
+            document.getElementById('header-title').textContent = titles[tabId];
             
             renderUI();
         }
@@ -461,12 +466,12 @@
                 });
             }
 
-            // 3. Update Dashboard Dashboard
-            document.getElementById('cal-eaten').innerText = totalKcal.toFixed(0);
-            document.getElementById('cal-burned').innerText = totalBurned;
+            // 3. Update Dashboard Dashboard (BUGFIX: svg textContent instead of innerText)
+            document.getElementById('cal-eaten').textContent = totalKcal.toFixed(0);
+            document.getElementById('cal-burned').textContent = totalBurned;
             
             let calLeft = (state.goals.kcal + totalBurned) - totalKcal;
-            document.getElementById('cal-left').innerText = Math.max(0, calLeft).toFixed(0);
+            document.getElementById('cal-left').textContent = Math.max(0, calLeft).toFixed(0);
             
             let totalBudget = state.goals.kcal + totalBurned;
             let calPercent = Math.min(100, (totalKcal / totalBudget) * 100);
@@ -479,8 +484,8 @@
             
             let sugarPercent = Math.min(100, (totalSugar / state.goals.sugar) * 100);
             document.getElementById('bar-sugar').style.width = `${sugarPercent}%`;
-            document.getElementById('txt-sugar').innerText = totalSugar.toFixed(0);
-            document.getElementById('goal-sugar').innerText = state.goals.sugar;
+            document.getElementById('txt-sugar').textContent = totalSugar.toFixed(0);
+            document.getElementById('goal-sugar').textContent = state.goals.sugar;
 
             // 4. Render Supplements (Today)
             const suppListEl = document.getElementById('supplements-list');
@@ -493,33 +498,55 @@
                     </label>`;
             }
 
-            // 5. Render Routines (Workout Tab)
+            // 5. Render Favorites
+            const favSec = document.getElementById('favorites-section');
+            const favList = document.getElementById('fav-list');
+            if(!state.favorites || state.favorites.length === 0) {
+                favSec.classList.add('hidden');
+            } else {
+                favSec.classList.remove('hidden');
+                favList.innerHTML = '';
+                state.favorites.forEach((f, i) => {
+                    const k = (f.kcal100 * f.amount / 100).toFixed(0);
+                    favList.innerHTML += `
+                    <div class="min-w-[140px] max-w-[140px] bg-gray-800 rounded-xl p-3 border border-gray-700 snap-start relative">
+                        <button onclick="deleteFavorite(${i})" class="absolute top-1 right-2 text-gray-500 hover:text-red-500 text-lg">&times;</button>
+                        <p class="font-bold text-sm text-white truncate pr-4">${f.name}</p>
+                        <p class="text-xs text-gray-400 mb-2">${f.amount}g • ${k} kcal</p>
+                        <button onclick="addFavToToday(${i})" class="w-full bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1.5 rounded-lg transition">+ Hinzufügen</button>
+                    </div>
+                    `;
+                });
+            }
+
+            // 6. Render Routines (Workout Tab)
             const routinesEl = document.getElementById('routines-list');
             routinesEl.innerHTML = '';
             if (!state.routines || state.routines.length === 0) {
                 routinesEl.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">Noch keine Routinen angelegt.</p>';
             } else {
                 state.routines.forEach((r, index) => {
+                    let infoText = r.explicitKcal ? `${r.explicitKcal} kcal fest` : `${r.mins} Min.`;
                     routinesEl.innerHTML += `
                         <div class="bg-gray-800 p-3 rounded-xl flex justify-between items-center border border-gray-700 shadow-sm">
                             <div class="cursor-pointer flex-1" onclick="viewRoutine(${index})">
                                 <p class="font-bold text-sm text-white">${r.name}</p>
-                                <p class="text-xs text-gray-400">${r.mins} Min. • Tippe für Details</p>
+                                <p class="text-xs text-brandblue font-semibold">${infoText}</p>
                             </div>
                             <button onclick="logRoutineDirectly(${index})" class="bg-brandpurple hover:bg-purple-400 text-white text-xs font-bold py-2 px-3 rounded-lg transition ml-2">Starten</button>
                         </div>`;
                 });
             }
 
-            // 6. Render History (Calendar Tab)
+            // 7. Render History (Calendar Tab)
             renderHistory();
         }
 
         function updateBar(macro, current, goal) {
             let percent = Math.min(100, (current / goal) * 100);
             document.getElementById(`bar-${macro}`).style.width = `${percent}%`;
-            document.getElementById(`txt-${macro}`).innerText = current.toFixed(0);
-            document.getElementById(`goal-${macro}`).innerText = goal;
+            document.getElementById(`txt-${macro}`).textContent = current.toFixed(0);
+            document.getElementById(`goal-${macro}`).textContent = goal;
         }
 
         // --- History Logic ---
@@ -527,7 +554,6 @@
             const histEl = document.getElementById('history-list');
             histEl.innerHTML = '';
             
-            // Get all dates, sort descending (newest first)
             const dates = Object.keys(state.history).sort((a, b) => b.localeCompare(a));
             
             dates.forEach(dateStr => {
@@ -537,7 +563,6 @@
                 data.foods.forEach(f => tKcal += (f.kcal100 * f.amount / 100));
                 data.workouts.forEach(w => tBurned += w.burned);
                 
-                // Format Date for display
                 const dObj = new Date(dateStr);
                 const displayDate = dObj.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
                 
@@ -548,7 +573,6 @@
                 histEl.innerHTML += `
                     <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm relative overflow-hidden">
                         <div class="mb-3 ${headerClass}">${label}</div>
-                        
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             <div class="bg-gray-900 p-2 rounded-lg text-center">
                                 <span class="block text-gray-400 text-xs mb-1">Gegessen</span>
@@ -559,7 +583,6 @@
                                 <span class="font-bold text-brandblue">${tBurned} kcal</span>
                             </div>
                         </div>
-                        
                         <div class="mt-3 text-xs text-gray-400 flex justify-between">
                             <span>${data.foods.length} Mahlzeiten</span>
                             <span>${data.workouts.length} Workouts</span>
@@ -573,21 +596,38 @@
         function toggleSupp(key) { state.history[TODAY].supps[key].done = !state.history[TODAY].supps[key].done; saveState(); renderUI(); }
         function deleteFood(index) { state.history[TODAY].foods.splice(index, 1); saveState(); renderUI(); }
         function deleteWorkout(index) { state.history[TODAY].workouts.splice(index, 1); saveState(); renderUI(); }
+        
+        function deleteFavorite(index) {
+            if(confirm("Favorit entfernen?")) {
+                state.favorites.splice(index, 1);
+                saveState();
+                renderUI();
+            }
+        }
 
-        function addWorkout(name = "Freies Training", explicitMet = null, explicitMins = null) {
+        function addFavToToday(index) {
+            const f = state.favorites[index];
+            // deep copy to avoid reference issues
+            state.history[TODAY].foods.push(JSON.parse(JSON.stringify(f)));
+            saveState();
+            renderUI();
+        }
+
+        function addWorkout(name = "Freies Training", explicitMet = null, explicitMins = null, explicitBurn = null) {
             let met = explicitMet !== null ? explicitMet : parseFloat(document.getElementById('workout-type').value);
             let mins = explicitMins !== null ? explicitMins : parseInt(document.getElementById('workout-mins').value);
+            
             if(!mins || mins <= 0) return alert("Bitte Dauer eingeben!");
             
             let weight = state.user.weight || 80;
-            let burned = Math.round((met * weight) * (mins / 60));
+            let burned = explicitBurn ? explicitBurn : Math.round((met * weight) * (mins / 60));
             
             state.history[TODAY].workouts.push({ name, mins, met, burned });
             document.getElementById('workout-mins').value = '';
             saveState();
             renderUI();
             
-            if(!explicitMet) alert(`Workout hinzugefügt! (${burned} kcal verbrannt)`);
+            if(explicitMet === null) alert(`Workout hinzugefügt! (${burned} kcal verbrannt)`);
         }
 
         // --- Routine Actions ---
@@ -595,6 +635,7 @@
             document.getElementById('routine-name').value = '';
             document.getElementById('routine-exercises').value = '';
             document.getElementById('routine-mins').value = 60;
+            document.getElementById('routine-explicit-kcal').value = '';
             document.getElementById('routine-modal').classList.remove('hidden');
         }
 
@@ -603,9 +644,10 @@
             const exercises = document.getElementById('routine-exercises').value;
             const mins = parseInt(document.getElementById('routine-mins').value) || 60;
             const met = parseFloat(document.getElementById('routine-type').value);
+            const explicitKcal = parseInt(document.getElementById('routine-explicit-kcal').value) || null;
 
             if(!state.routines) state.routines = [];
-            state.routines.push({ name, exercises, mins, met });
+            state.routines.push({ name, exercises, mins, met, explicitKcal });
             saveState();
             closeModals();
             renderUI();
@@ -614,8 +656,9 @@
         function viewRoutine(index) {
             activeRoutineIndex = index;
             const r = state.routines[index];
-            document.getElementById('view-routine-name').innerText = r.name;
-            document.getElementById('view-routine-exercises').innerText = r.exercises || "Keine Übungen hinterlegt.";
+            document.getElementById('view-routine-name').textContent = r.name;
+            document.getElementById('view-routine-exercises').textContent = r.exercises || "Keine Übungen hinterlegt.";
+            document.getElementById('view-routine-stats').textContent = r.explicitKcal ? `Fester Kalorienverbrauch: ${r.explicitKcal} kcal` : `Geschätzt: ${r.mins} Min. (nach MET-Wert)`;
             document.getElementById('routine-view-modal').classList.remove('hidden');
         }
 
@@ -626,8 +669,8 @@
 
         function logRoutineDirectly(index) {
             const r = state.routines[index];
-            addWorkout(r.name, r.met, r.mins);
-            alert(`Routine "${r.name}" als Workout (${r.mins} Min.) eingetragen!`);
+            addWorkout(r.name, r.met, r.mins, r.explicitKcal);
+            alert(`Routine "${r.name}" als Workout eingetragen!`);
         }
 
         function deleteCurrentRoutine() {
@@ -714,14 +757,19 @@
             document.getElementById('manual-modal').classList.add('hidden');
             document.getElementById('routine-modal').classList.add('hidden');
             document.getElementById('routine-view-modal').classList.add('hidden');
+            
+            // BUGFIX: Proper destruction of scanner to prevent undefined catch error
             if(html5QrcodeScanner) {
-                html5QrcodeScanner.clear().catch(e => console.log(e));
+                try {
+                    html5QrcodeScanner.stop().catch(e => console.log("Scanner stop ignored"));
+                } catch(e) {}
                 html5QrcodeScanner = null;
             }
         }
 
         function openManualModal(product = null) {
             document.getElementById('manual-modal').classList.remove('hidden');
+            document.getElementById('food-save-fav').checked = false; // Reset checkbox
             if (product) {
                 document.getElementById('food-name').value = product.name;
                 document.getElementById('food-kcal-100').value = product.kcal;
@@ -745,7 +793,7 @@
         function calculatePreview() {
             const amount = parseFloat(document.getElementById('food-amount').value) || 0;
             const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
-            document.getElementById('preview-kcal').innerText = `${(kcal100 * amount / 100).toFixed(0)} kcal`;
+            document.getElementById('preview-kcal').textContent = `${(kcal100 * amount / 100).toFixed(0)} kcal`;
         }
 
         function saveFood() {
@@ -756,15 +804,26 @@
             const prot100 = parseFloat(document.getElementById('food-prot-100').value) || 0;
             const fat100 = parseFloat(document.getElementById('food-fat-100').value) || 0;
             const sugar100 = parseFloat(document.getElementById('food-sugar-100').value) || 0;
+            const saveAsFav = document.getElementById('food-save-fav').checked;
 
-            state.history[TODAY].foods.push({ name, amount, kcal100, carbs100, prot100, fat100, sugar100 });
-            saveState(); closeModals(); renderUI();
+            const newFood = { name, amount, kcal100, carbs100, prot100, fat100, sugar100 };
+            
+            state.history[TODAY].foods.push(newFood);
+            
+            if(saveAsFav) {
+                if(!state.favorites) state.favorites = [];
+                state.favorites.push(newFood);
+            }
+
+            saveState(); 
+            closeModals(); 
+            renderUI();
         }
 
         // --- Scanner ---
         function startScanner() {
             document.getElementById('scanner-modal').classList.remove('hidden');
-            document.getElementById('scanner-status').innerText = 'Kamera wird gestartet...';
+            document.getElementById('scanner-status').textContent = 'Kamera wird gestartet...';
             html5QrcodeScanner = new Html5Qrcode("reader");
             html5QrcodeScanner.start(
                 { facingMode: "environment" }, 
@@ -772,19 +831,20 @@
                 onScanSuccess, 
                 () => {}
             ).then(() => { 
-                document.getElementById('scanner-status').innerText = 'Suche Barcode...'; 
+                document.getElementById('scanner-status').textContent = 'Suche Barcode...'; 
             }).catch((err) => {
-                document.getElementById('scanner-status').innerText = 'Kamerafehler: ' + err;
+                document.getElementById('scanner-status').textContent = 'Kamerafehler: ' + err;
             });
         }
-        function stopScanner() { closeModals(); }
 
         let isScanning = false;
         function onScanSuccess(decodedText) {
             if(isScanning) return;
             isScanning = true;
-            document.getElementById('scanner-status').innerText = `Gefunden: ${decodedText}. Lade Daten...`;
-            html5QrcodeScanner.stop().then(() => fetchProductData(decodedText)).catch(e => console.log(e));
+            document.getElementById('scanner-status').textContent = `Gefunden: ${decodedText}. Lade Daten...`;
+            
+            // Bypass stop promise issue by just calling fetch and letting closeModals handle the stop
+            fetchProductData(decodedText);
         }
 
         async function fetchProductData(barcode) {
@@ -808,14 +868,13 @@
                     alert('Produkt nicht in der Datenbank gefunden.');
                     openManualModal();
                 }
-                closeModals();
             } catch(e) {
                 alert(`Netzwerk- oder API-Fehler!
 
 ${e.message}`);
-                closeModals();
                 openManualModal();
             } finally {
+                closeModals(); // This properly stops scanner now
                 isScanning = false;
             }
         }
