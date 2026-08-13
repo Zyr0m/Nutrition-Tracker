@@ -1,7 +1,102 @@
+  <!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nutrition & Workout Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        appbg: '#121212',
+                        cardbg: '#1e1e1e',
+                        brand: '#10b981', 
+                        brandlight: '#34d399',
+                        brandblue: '#3b82f6',
+                        brandpurple: '#a855f7'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121212; color: #ffffff; }
+        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #333333; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 0.5s ease; }
+        .percentage { fill: #fff; font-family: sans-serif; font-size: 0.5em; text-anchor: middle; font-weight: bold; }
+        .subtext { fill: #aaa; font-family: sans-serif; font-size: 0.2em; text-anchor: middle; }
+        .modal-bg { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
+        ::-webkit-scrollbar { display: none; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+    </style>
+</head>
+<body class="antialiased pb-24">
+
+    <!-- Header -->
+    <header class="p-4 flex justify-between items-center bg-appbg sticky top-0 z-10 border-b border-gray-800">
+        <h1 class="text-2xl font-bold" id="header-title">Tagebuch</h1>
+        <span class="text-sm text-gray-500" id="header-date"></span>
+    </header>
+
+    <!-- VIEWS -->
+    <main class="px-4 space-y-4 mt-4">
+        
+        <!-- ================= DIARY VIEW ================= -->
+        <div id="view-diary" class="tab-view space-y-4">
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="text-center w-1/4">
+                        <p class="text-xl font-bold" id="cal-eaten">0</p>
+                        <p class="text-xs text-gray-400">Gegessen</p>
+                    </div>
+                    <div class="w-1/2 relative">
+                        <svg viewBox="0 0 36 36" class="circular-chart brand">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" id="cal-circle" stroke="#10b981" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <text x="18" y="17" class="percentage" id="cal-left">2400</text>
+                            <text x="18" y="22" class="subtext">Übrig</text>
+                        </svg>
+                    </div>
+                    <div class="text-center w-1/4">
+                        <p class="text-xl font-bold text-brandblue" id="cal-burned">0</p>
+                        <p class="text-xs text-gray-400">Verbrannt</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div>
+                        <p class="text-gray-400 mb-1">Kohlenh.</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-brand h-1.5 rounded-full" id="bar-carbs" style="width: 0%"></div></div>
+                        <p><span id="txt-carbs">0</span> / <span id="goal-carbs">250</span> g</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 mb-1">Eiweiß</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-brand h-1.5 rounded-full" id="bar-protein" style="width: 0%"></div></div>
+                        <p><span id="txt-protein">0</span> / <span id="goal-protein">160</span> g</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 mb-1">Fett</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-brand h-1.5 rounded-full" id="bar-fat" style="width: 0%"></div></div>
+                        <p><span id="txt-fat">0</span> / <span id="goal-fat">70</span> g</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 mb-1">Zucker</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-red-500 h-1.5 rounded-full" id="bar-sugar" style="width: 0%"></div></div>
+                        <p><span id="txt-sugar">0</span> / <span id="goal-sugar">50</span> g</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-cardbg rounded-2xl p-4 border border-gray-800 shadow-lg">
+                <h2 class="font-bold text-sm text-gray-400 mb-3 uppercase tracking-wider">Ergänzung</h2>
                 <div class="grid grid-cols-2 gap-2" id="supplements-list"></div>
             </section>
 
-            <!-- Nutrition Actions -->
             <section class="grid grid-cols-3 gap-2">
                 <button onclick="startScanner()" class="bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl flex flex-col items-center justify-center transition shadow-lg text-sm">
                     <span class="text-xl mb-1">📷</span> Scan
@@ -14,13 +109,11 @@
                 </button>
             </section>
 
-            <!-- Favorites Section -->
             <section id="favorites-section" class="bg-cardbg rounded-2xl p-4 border border-gray-800 shadow-lg hidden">
                 <h2 class="font-bold text-sm text-gray-400 mb-3 uppercase tracking-wider">Favoriten (Schnellwahl)</h2>
                 <div id="fav-list" class="flex overflow-x-auto gap-3 pb-2 snap-x"></div>
             </section>
 
-            <!-- Food List -->
             <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg min-h-[150px]">
                 <h2 class="font-bold text-lg mb-4">Mahlzeiten Heute</h2>
                 <div id="food-list" class="space-y-3"></div>
@@ -50,7 +143,9 @@
                 </select>
                 <label class="text-sm text-gray-400 mb-1 block">Dauer (Minuten)</label>
                 <input type="number" id="workout-mins" placeholder="z.B. 60" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4 focus:outline-none focus:border-brandblue">
-                <button onclick="addWorkout()" class="w-full bg-brandblue hover:bg-blue-400 text-white font-bold py-3 rounded-xl transition shadow-lg">Workout eintragen</button>
+                <button onclick="addWorkout()" class="w-full bg-brandblue hover:bg-blue-400 text-white font-bold py-3 rounded-xl transition shadow-lg">
+                    Workout eintragen
+                </button>
             </section>
             
             <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg min-h-[150px]">
@@ -130,8 +225,8 @@
                 <button onclick="closeModals()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="flex gap-2 mb-4">
-                <input type="text" id="search-input" placeholder="z.B. Haferflocken" class="flex-1 bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none" onkeydown="if(event.key === 'Enter') { event.preventDefault(); performSearch(); }">
-                <button type="button" onclick="performSearch()" class="bg-brandblue hover:bg-blue-400 text-white font-bold px-4 rounded-lg transition">🔍</button>
+                <input type="text" id="search-input" placeholder="z.B. Haferflocken" class="flex-1 bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none" onkeydown="if(event.key === 'Enter') performSearch()">
+                <button onclick="performSearch()" class="bg-brand blue hover:bg-brandlight text-black font-bold px-4 rounded-lg transition">🔍</button>
             </div>
             <div id="search-results" class="overflow-y-auto flex-1 space-y-2 pr-2"></div>
         </div>
@@ -151,32 +246,37 @@
         </div>
     </div>
 
-    <!-- Manual Entry Modal -->
+    <!-- Manual Entry Modal (UPDATED FOR PIECES) -->
     <div id="manual-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
         <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700 p-5">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg" id="modal-title">Hinzufügen</h3>
                 <button onclick="closeModals()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
-            
             <input type="text" id="food-name" placeholder="Name" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-3">
             
-            <div class="mb-3">
-                <select id="food-unit" onchange="toggleFoodUnit()" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none">
-                    <option value="g">Berechnung: pro 100 g / ml</option>
-                    <option value="Stück">Berechnung: pro Stück / Portion</option>
-                </select>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Menge & Einheit</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="food-amount" value="100" class="w-1/2 bg-appbg border border-gray-700 rounded-lg p-3 text-white" oninput="calculatePreview()">
+                        <select id="food-unit" class="w-1/2 bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none" onchange="toggleUnitLabels(); calculatePreview()">
+                            <option value="g">g/ml</option>
+                            <option value="stk">Stück</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 ml-1" id="label-kcal">kcal (pro 100g)</label>
+                    <input type="number" id="food-kcal-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white" oninput="calculatePreview()">
+                </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <div><label class="text-xs text-gray-400 ml-1" id="lbl-amount">Menge (g/ml)</label><input type="number" id="food-amount" value="100" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white" oninput="calculatePreview()"></div>
-                <div><label class="text-xs text-gray-400 ml-1" id="lbl-kcal">kcal (pro 100g)</label><input type="number" id="food-kcal-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white" oninput="calculatePreview()"></div>
-            </div>
             <div class="grid grid-cols-4 gap-2 mb-4">
-                <div><label class="text-xs text-gray-400" id="lbl-carbs">Kohlenh.</label><input type="number" id="food-carbs-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
-                <div><label class="text-xs text-gray-400" id="lbl-prot">Eiweiß</label><input type="number" id="food-prot-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
-                <div><label class="text-xs text-gray-400" id="lbl-fat">Fett</label><input type="number" id="food-fat-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
-                <div><label class="text-xs text-gray-400" id="lbl-sugar">Zucker</label><input type="number" id="food-sugar-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400">Kohlenh.</label><input type="number" id="food-carbs-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400">Eiweiß</label><input type="number" id="food-prot-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400">Fett</label><input type="number" id="food-fat-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400">Zucker</label><input type="number" id="food-sugar-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
             </div>
             
             <div class="bg-gray-800 rounded-lg p-3 mb-4 text-sm flex justify-between items-center border border-gray-700">
@@ -201,10 +301,8 @@
             </div>
             <label class="text-sm text-gray-400 mb-1 block">Name der Routine</label>
             <input type="text" id="routine-name" placeholder="z.B. Push Day" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4">
-            
             <label class="text-sm text-gray-400 mb-1 block">Übungen (eine pro Zeile)</label>
             <textarea id="routine-exercises" rows="3" placeholder="- Bankdrücken 3x10\n- Schulterdrücken 3x10..." class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4 focus:outline-none"></textarea>
-            
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <div>
                     <label class="text-sm text-gray-400 mb-1 block">Dauer (Min.)</label>
@@ -219,13 +317,10 @@
                     </select>
                 </div>
             </div>
-
             <div class="bg-gray-800 p-3 rounded-lg border border-gray-700 mb-6">
-                <label class="text-xs text-brandlight font-bold mb-1 block">ODER: Feste Kalorien eintragen</label>
-                <p class="text-[10px] text-gray-400 mb-2">Überschreibt die automatische Berechnung oben.</p>
+                <label class="text-xs text-brandlight font-bold mb-1 block">ODER: Feste Kalorien</label>
                 <input type="number" id="routine-explicit-kcal" placeholder="z.B. 450 kcal" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white">
             </div>
-
             <button onclick="saveRoutine()" class="w-full bg-brandpurple hover:bg-purple-400 text-white font-bold py-3 rounded-xl transition shadow-lg">Routine speichern</button>
         </div>
     </div>
@@ -240,7 +335,7 @@
             <div class="bg-appbg border border-gray-800 rounded-lg p-4 mb-4 whitespace-pre-wrap text-sm text-gray-300" id="view-routine-exercises"></div>
             <p class="text-xs text-gray-400 mb-4 text-center" id="view-routine-stats"></p>
             <div class="flex gap-2">
-                <button onclick="logRoutineFromView()" class="flex-1 bg-brandblue hover:bg-blue-400 text-white font-bold py-3 rounded-xl transition">Als Workout eintragen</button>
+                <button onclick="logRoutineFromView()" class="flex-1 bg-brandblue hover:bg-blue-400 text-white font-bold py-3 rounded-xl transition">Als Workout</button>
                 <button onclick="deleteCurrentRoutine()" class="bg-red-500 hover:bg-red-400 text-white font-bold px-4 rounded-xl transition">🗑️</button>
             </div>
         </div>
@@ -273,10 +368,9 @@
         }
 
         function migrateAndLoadState() {
-            const saved = localStorage.getItem('nutriTrackerV3');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                state = { ...state, ...parsed };
+            const savedV3 = localStorage.getItem('nutriTrackerV3');
+            if (savedV3) {
+                state = { ...state, ...JSON.parse(savedV3) }; 
                 if(!state.favorites) state.favorites = [];
             }
         }
@@ -284,7 +378,8 @@
         function ensureTodayExists() {
             if (!state.history[TODAY]) {
                 state.history[TODAY] = {
-                    foods: [], workouts: [],
+                    foods: [],
+                    workouts: [],
                     supps: {
                         creatine: { name: 'Kreatin', done: false },
                         vitD: { name: 'Vit D3+K2', done: false },
@@ -297,30 +392,25 @@
         }
 
         function saveState() {
-            localStorage.setItem('nutriTrackerV3', JSON.stringify(state));
+            localStorage.setItem('nutriTrackerV3', JSON.stringify(state)); 
         }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
             document.getElementById(`view-${tabId}`).classList.remove('hidden');
-            
             ['diary', 'workout', 'history', 'goals'].forEach(id => {
                 let btn = document.getElementById(`nav-${id}`);
                 btn.classList.remove('text-brand', 'font-bold', 'text-brandblue', 'text-brandpurple');
                 btn.classList.add('text-gray-500');
             });
-            
             let activeBtn = document.getElementById(`nav-${tabId}`);
             activeBtn.classList.remove('text-gray-500');
-            
             let highlightColor = 'text-brand';
             if (tabId === 'workout') highlightColor = 'text-brandblue';
             if (tabId === 'history') highlightColor = 'text-brandpurple';
             activeBtn.classList.add(highlightColor, 'font-bold');
-            
             const titles = { diary: 'Tagebuch', workout: 'Workout', history: 'Verlauf', goals: 'Ziele' };
             document.getElementById('header-title').textContent = titles[tabId];
-            
             renderUI();
         }
 
@@ -334,24 +424,22 @@
                 foodListEl.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">Noch nichts gegessen.</p>';
             } else {
                 todayData.foods.forEach((food, index) => {
-                    const isPiece = food.unit === 'Stück';
-                    const multiplier = isPiece ? food.amount : (food.amount / 100);
-                    
-                    const k = (food.kcal100 * multiplier).toFixed(0);
-                    const p = (food.prot100 * multiplier).toFixed(1);
+                    const factor = food.unit === 'stk' ? food.amount : food.amount / 100;
+                    const k = (food.kcal100 * factor).toFixed(0);
+                    const p = (food.prot100 * factor).toFixed(1);
                     totalKcal += parseFloat(k);
-                    totalCarbs += (food.carbs100 * multiplier);
-                    totalProt += (food.prot100 * multiplier);
-                    totalFat += (food.fat100 * multiplier);
-                    totalSugar += (food.sugar100 * multiplier);
+                    totalCarbs += (food.carbs100 * factor);
+                    totalProt += (food.prot100 * factor);
+                    totalFat += (food.fat100 * factor);
+                    totalSugar += (food.sugar100 * factor);
 
-                    const displayAmt = isPiece ? `${food.amount}x` : `${food.amount}g`;
+                    const amtStr = food.unit === 'stk' ? `${food.amount} Stk.` : `${food.amount}g`;
 
                     foodListEl.innerHTML += `
                         <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-700">
                             <div>
                                 <p class="font-bold text-sm text-white">${food.name}</p>
-                                <p class="text-xs text-gray-400">${displayAmt} • ${k} kcal • ${p}g EW</p>
+                                <p class="text-xs text-gray-400">${amtStr} • ${k} kcal • ${p}g EW</p>
                             </div>
                             <button onclick="deleteFood(${index})" class="text-gray-500 hover:text-red-500 text-xl px-2">&times;</button>
                         </div>`;
@@ -365,11 +453,10 @@
             } else {
                 todayData.workouts.forEach((w, index) => {
                     totalBurned += w.burned;
-                    const wName = w.name || "Training";
                     workListEl.innerHTML += `
                         <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-700">
                             <div>
-                                <p class="font-bold text-sm text-white">${wName} (${w.mins} Min.)</p>
+                                <p class="font-bold text-sm text-white">${w.name || "Training"} (${w.mins} Min.)</p>
                                 <p class="text-xs text-brandblue">+ ${w.burned} kcal verbrannt</p>
                             </div>
                             <button onclick="deleteWorkout(${index})" class="text-gray-500 hover:text-red-500 text-xl px-2">&times;</button>
@@ -379,7 +466,6 @@
 
             document.getElementById('cal-eaten').textContent = totalKcal.toFixed(0);
             document.getElementById('cal-burned').textContent = totalBurned;
-            
             let calLeft = (state.goals.kcal + totalBurned) - totalKcal;
             document.getElementById('cal-left').textContent = Math.max(0, calLeft).toFixed(0);
             
@@ -415,19 +501,16 @@
                 favSec.classList.remove('hidden');
                 favList.innerHTML = '';
                 state.favorites.forEach((f, i) => {
-                    const isPiece = f.unit === 'Stück';
-                    const multiplier = isPiece ? f.amount : (f.amount / 100);
-                    const k = (f.kcal100 * multiplier).toFixed(0);
-                    const displayAmt = isPiece ? `${f.amount}x` : `${f.amount}g`;
-
+                    const factor = f.unit === 'stk' ? f.amount : f.amount / 100;
+                    const k = (f.kcal100 * factor).toFixed(0);
+                    const amtStr = f.unit === 'stk' ? `${f.amount} Stk.` : `${f.amount}g`;
                     favList.innerHTML += `
                     <div class="min-w-[140px] max-w-[140px] bg-gray-800 rounded-xl p-3 border border-gray-700 snap-start relative">
                         <button onclick="deleteFavorite(${i})" class="absolute top-1 right-2 text-gray-500 hover:text-red-500 text-lg">&times;</button>
                         <p class="font-bold text-sm text-white truncate pr-4">${f.name}</p>
-                        <p class="text-xs text-gray-400 mb-2">${displayAmt} • ${k} kcal</p>
+                        <p class="text-xs text-gray-400 mb-2">${amtStr} • ${k} kcal</p>
                         <button onclick="addFavToToday(${i})" class="w-full bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1.5 rounded-lg transition">+ Hinzufügen</button>
-                    </div>
-                    `;
+                    </div>`;
                 });
             }
 
@@ -462,7 +545,6 @@
         function renderHistory() {
             const histEl = document.getElementById('history-list');
             histEl.innerHTML = '';
-            
             const dates = Object.keys(state.history).sort((a, b) => b.localeCompare(a));
             
             dates.forEach(dateStr => {
@@ -470,8 +552,8 @@
                 let tKcal = 0, tBurned = 0;
                 
                 data.foods.forEach(f => {
-                    const multiplier = (f.unit === 'Stück') ? f.amount : (f.amount / 100);
-                    tKcal += (f.kcal100 * multiplier);
+                    const factor = f.unit === 'stk' ? f.amount : f.amount / 100;
+                    tKcal += (f.kcal100 * factor);
                 });
                 data.workouts.forEach(w => tBurned += w.burned);
                 
@@ -494,8 +576,11 @@
                                 <span class="font-bold text-brandblue">${tBurned} kcal</span>
                             </div>
                         </div>
-                    </div>
-                `;
+                        <div class="mt-3 text-xs text-gray-400 flex justify-between">
+                            <span>${data.foods.length} Mahlzeiten</span>
+                            <span>${data.workouts.length} Workouts</span>
+                        </div>
+                    </div>`;
             });
         }
 
@@ -504,18 +589,24 @@
         function deleteWorkout(index) { state.history[TODAY].workouts.splice(index, 1); saveState(); renderUI(); }
         
         function deleteFavorite(index) {
-            if(confirm("Favorit entfernen?")) { state.favorites.splice(index, 1); saveState(); renderUI(); }
+            if(confirm("Favorit entfernen?")) {
+                state.favorites.splice(index, 1);
+                saveState();
+                renderUI();
+            }
         }
 
         function addFavToToday(index) {
             const f = state.favorites[index];
             state.history[TODAY].foods.push(JSON.parse(JSON.stringify(f)));
-            saveState(); renderUI();
+            saveState();
+            renderUI();
         }
 
         function addWorkout(name = "Freies Training", explicitMet = null, explicitMins = null, explicitBurn = null) {
             let met = explicitMet !== null ? explicitMet : parseFloat(document.getElementById('workout-type').value);
             let mins = explicitMins !== null ? explicitMins : parseInt(document.getElementById('workout-mins').value);
+            
             if(!mins || mins <= 0) return alert("Bitte Dauer eingeben!");
             
             let weight = state.user.weight || 80;
@@ -523,7 +614,8 @@
             
             state.history[TODAY].workouts.push({ name, mins, met, burned });
             document.getElementById('workout-mins').value = '';
-            saveState(); renderUI();
+            saveState();
+            renderUI();
             if(explicitMet === null) alert(`Workout hinzugefügt! (${burned} kcal verbrannt)`);
         }
 
@@ -544,7 +636,9 @@
 
             if(!state.routines) state.routines = [];
             state.routines.push({ name, exercises, mins, met, explicitKcal });
-            saveState(); closeModals(); renderUI();
+            saveState();
+            closeModals();
+            renderUI();
         }
 
         function viewRoutine(index) {
@@ -556,7 +650,10 @@
             document.getElementById('routine-view-modal').classList.remove('hidden');
         }
 
-        function logRoutineFromView() { logRoutineDirectly(activeRoutineIndex); closeModals(); }
+        function logRoutineFromView() {
+            logRoutineDirectly(activeRoutineIndex);
+            closeModals();
+        }
 
         function logRoutineDirectly(index) {
             const r = state.routines[index];
@@ -565,7 +662,12 @@
         }
 
         function deleteCurrentRoutine() {
-            if(confirm("Routine wirklich löschen?")) { state.routines.splice(activeRoutineIndex, 1); saveState(); closeModals(); renderUI(); }
+            if(confirm("Routine wirklich löschen?")) {
+                state.routines.splice(activeRoutineIndex, 1);
+                saveState();
+                closeModals();
+                renderUI();
+            }
         }
 
         function populateGoalInputs() {
@@ -583,7 +685,9 @@
             state.user.weight = parseFloat(document.getElementById('user-weight').value) || 80;
             state.user.targetWeight = parseFloat(document.getElementById('user-target-weight').value) || 75;
             state.user.targetDate = document.getElementById('user-target-date').value;
-            saveState(); calculateGoalProjection(); renderUI(); 
+            saveState();
+            calculateGoalProjection();
+            renderUI(); 
         }
 
         function saveGoals() {
@@ -592,7 +696,8 @@
             state.goals.protein = parseFloat(document.getElementById('set-goal-prot').value) || 160;
             state.goals.fat = parseFloat(document.getElementById('set-goal-fat').value) || 70;
             state.goals.sugar = parseFloat(document.getElementById('set-goal-sugar').value) || 50;
-            saveState(); renderUI();
+            saveState();
+            renderUI();
         }
 
         function calculateGoalProjection() {
@@ -600,18 +705,35 @@
             const tW = parseFloat(document.getElementById('user-target-weight').value);
             const dStr = document.getElementById('user-target-date').value;
             const box = document.getElementById('goal-projection-box');
-            if(!w || !tW || !dStr) { box.innerHTML = "Bitte fülle alle Felder aus, um deine Projektion zu sehen."; return; }
+            
+            if(!w || !tW || !dStr) {
+                box.innerHTML = "Bitte fülle alle Felder aus, um deine Projektion zu sehen.";
+                return;
+            }
 
-            const diffDays = Math.ceil((new Date(dStr) - new Date()) / (1000 * 60 * 60 * 24));
-            if(diffDays <= 0) { box.innerHTML = "<span class='text-red-400'>Das Zieldatum liegt in der Vergangenheit!</span>"; return; }
+            const targetDate = new Date(dStr);
+            const today = new Date();
+            const diffTime = targetDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if(diffDays <= 0) {
+                box.innerHTML = "<span class='text-red-400'>Das Zieldatum liegt in der Vergangenheit!</span>";
+                return;
+            }
 
             const diffWeight = w - tW; 
-            const dailyDiff = Math.round((Math.abs(diffWeight) * 7000) / diffDays);
+            const isLoss = diffWeight > 0;
+            const totalKcalDiff = Math.abs(diffWeight) * 7000;
+            const dailyDiff = Math.round(totalKcalDiff / diffDays);
             
             let text = `Noch <strong class="text-white">${diffDays} Tage</strong>. `;
-            if(Math.abs(diffWeight) < 0.2) text += `Du bist an deinem Zielgewicht!`;
-            else if(diffWeight > 0) text += `Für -${diffWeight.toFixed(1)}kg brauchst du ein Defizit von <strong class="text-brand">${dailyDiff} kcal</strong> täglich.`;
-            else text += `Für +${Math.abs(diffWeight).toFixed(1)}kg brauchst du einen Überschuss von <strong class="text-brandblue">+${dailyDiff} kcal</strong> täglich.`;
+            if(Math.abs(diffWeight) < 0.2) {
+                text += `Du bist an deinem Zielgewicht!`;
+            } else if(isLoss) {
+                text += `Für -${diffWeight.toFixed(1)}kg brauchst du ein Defizit von <strong class="text-brand">${dailyDiff} kcal</strong> täglich.`;
+            } else {
+                text += `Für +${Math.abs(diffWeight).toFixed(1)}kg brauchst du einen Überschuss von <strong class="text-brandblue">+${dailyDiff} kcal</strong> täglich.`;
+            }
             box.innerHTML = text;
         }
 
@@ -662,7 +784,8 @@
                         btn.onclick = () => {
                             closeModals();
                             openManualModal({
-                                name: name, kcal: k,
+                                name: name,
+                                kcal: k,
                                 carbs: nut['carbohydrates_100g'] || 0,
                                 protein: nut['proteins_100g'] || 0,
                                 fat: nut['fat_100g'] || 0,
@@ -671,28 +794,43 @@
                         };
                         resEl.appendChild(btn);
                     });
-                } else { resEl.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Keine Treffer gefunden.</p>'; }
-            } catch (e) { resEl.innerHTML = '<p class="text-red-400 text-sm text-center py-4">Fehler bei der Suche.</p>'; }
+                } else {
+                    resEl.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Keine Treffer gefunden.</p>';
+                }
+            } catch (e) {
+                resEl.innerHTML = '<p class="text-red-400 text-sm text-center py-4">Fehler bei der Suche.</p>';
+            }
         }
 
-        function toggleFoodUnit() {
-            const isPiece = document.getElementById('food-unit').value === 'Stück';
-            document.getElementById('lbl-amount').textContent = isPiece ? 'Anzahl (Stück/Portionen)' : 'Menge (g/ml)';
-            document.getElementById('lbl-kcal').textContent = isPiece ? 'kcal (pro Stück)' : 'kcal (pro 100g)';
+        // --- NEW: UNIT TOGGLE LOGIC ---
+        function toggleUnitLabels() {
+            const unit = document.getElementById('food-unit').value;
+            if(unit === 'stk') {
+                document.getElementById('label-kcal').textContent = 'Wert (pro Stück)';
+                document.getElementById('food-amount').value = 1;
+            } else {
+                document.getElementById('label-kcal').textContent = 'Wert (pro 100g)';
+                document.getElementById('food-amount').value = 100;
+            }
+        }
+
+        function calculatePreview() {
+            const amount = parseFloat(document.getElementById('food-amount').value) || 0;
+            const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
+            const unit = document.getElementById('food-unit').value;
             
-            const amtInput = document.getElementById('food-amount');
-            if(isPiece && amtInput.value == "100") amtInput.value = 1;
-            if(!isPiece && amtInput.value == "1") amtInput.value = 100;
-            
-            calculatePreview();
+            let total = unit === 'stk' ? kcal100 * amount : kcal100 * amount / 100;
+            document.getElementById('preview-kcal').textContent = `${total.toFixed(0)} kcal`;
         }
 
         function openManualModal(product = null) {
             document.getElementById('manual-modal').classList.remove('hidden');
-            document.getElementById('food-save-fav').checked = false; 
-            document.getElementById('food-unit').value = 'g'; 
-            toggleFoodUnit(); 
+            document.getElementById('food-save-fav').checked = false;
             
+            // Default to gram mode on open
+            document.getElementById('food-unit').value = 'g';
+            document.getElementById('label-kcal').textContent = 'Wert (pro 100g)';
+
             if (product) {
                 document.getElementById('food-name').value = product.name;
                 document.getElementById('food-kcal-100').value = product.kcal;
@@ -700,6 +838,7 @@
                 document.getElementById('food-prot-100').value = product.protein;
                 document.getElementById('food-fat-100').value = product.fat;
                 document.getElementById('food-sugar-100').value = product.sugar;
+                document.getElementById('food-amount').value = 100;
             } else {
                 document.getElementById('food-name').value = '';
                 document.getElementById('food-kcal-100').value = '';
@@ -707,30 +846,24 @@
                 document.getElementById('food-prot-100').value = '';
                 document.getElementById('food-fat-100').value = '';
                 document.getElementById('food-sugar-100').value = '';
+                document.getElementById('food-amount').value = 100;
             }
             calculatePreview();
         }
 
-        function calculatePreview() {
-            const amount = parseFloat(document.getElementById('food-amount').value) || 0;
-            const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
-            const isPiece = document.getElementById('food-unit').value === 'Stück';
-            const multiplier = isPiece ? amount : (amount / 100);
-            document.getElementById('preview-kcal').textContent = `${(kcal100 * multiplier).toFixed(0)} kcal`;
-        }
-
         function saveFood() {
             const name = document.getElementById('food-name').value || 'Unbekannt';
-            const amount = parseFloat(document.getElementById('food-amount').value) || (document.getElementById('food-unit').value === 'Stück' ? 1 : 100);
+            const amount = parseFloat(document.getElementById('food-amount').value) || 0;
             const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
             const carbs100 = parseFloat(document.getElementById('food-carbs-100').value) || 0;
             const prot100 = parseFloat(document.getElementById('food-prot-100').value) || 0;
             const fat100 = parseFloat(document.getElementById('food-fat-100').value) || 0;
             const sugar100 = parseFloat(document.getElementById('food-sugar-100').value) || 0;
-            const unit = document.getElementById('food-unit').value;
+            const unit = document.getElementById('food-unit').value || 'g';
             const saveAsFav = document.getElementById('food-save-fav').checked;
 
             const newFood = { name, amount, kcal100, carbs100, prot100, fat100, sugar100, unit };
+            
             state.history[TODAY].foods.push(newFood);
             
             if(saveAsFav) {
@@ -738,7 +871,9 @@
                 state.favorites.push(newFood);
             }
 
-            saveState(); closeModals(); renderUI();
+            saveState(); 
+            closeModals(); 
+            renderUI();
         }
 
         function startScanner() {
