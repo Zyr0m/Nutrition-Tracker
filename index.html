@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nutrition & Supp Tracker</title>
+    <title>Nutrition & Workout Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script>
@@ -14,8 +14,10 @@
                     colors: {
                         appbg: '#121212',
                         cardbg: '#1e1e1e',
-                        brand: '#10b981', // Yazio-style teal
-                        brandlight: '#34d399'
+                        brand: '#10b981', 
+                        brandlight: '#34d399',
+                        brandblue: '#3b82f6',
+                        brandpurple: '#a855f7'
                     }
                 }
             }
@@ -28,283 +30,400 @@
         .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 0.5s ease; }
         .percentage { fill: #fff; font-family: sans-serif; font-size: 0.5em; text-anchor: middle; font-weight: bold; }
         .subtext { fill: #aaa; font-family: sans-serif; font-size: 0.2em; text-anchor: middle; }
-        
-        /* Modal background */
         .modal-bg { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
-        
-        /* Hide scrollbar for clean UI */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
 <body class="antialiased pb-24">
 
     <!-- Header -->
-    <header class="p-4 flex justify-between items-center bg-appbg sticky top-0 z-10">
-        <h1 class="text-2xl font-bold">Heute</h1>
-        <div class="text-sm bg-cardbg px-3 py-1 rounded-full text-brand border border-gray-700 cursor-pointer" onclick="openGoalsModal()">
-            ⚙️ Ziele anpassen
-        </div>
+    <header class="p-4 flex justify-between items-center bg-appbg sticky top-0 z-10 border-b border-gray-800">
+        <h1 class="text-2xl font-bold" id="header-title">Tagebuch</h1>
+        <span class="text-sm text-gray-500" id="header-date"></span>
     </header>
 
-    <main class="px-4 space-y-4">
+    <!-- VIEWS -->
+    <main class="px-4 space-y-4 mt-4">
         
-        <!-- Dashboard Card (ähnlich Yazio) -->
-        <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-lg">Übersicht</h2>
-            </div>
+        <!-- ================= DIARY VIEW ================= -->
+        <div id="view-diary" class="tab-view space-y-4">
+            <!-- Dashboard Card -->
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="text-center w-1/4">
+                        <p class="text-xl font-bold" id="cal-eaten">0</p>
+                        <p class="text-xs text-gray-400">Gegessen</p>
+                    </div>
+                    <div class="w-1/2 relative">
+                        <svg viewBox="0 0 36 36" class="circular-chart brand">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" id="cal-circle" stroke="#10b981" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <text x="18" y="17" class="percentage" id="cal-left">2400</text>
+                            <text x="18" y="22" class="subtext">Übrig</text>
+                        </svg>
+                    </div>
+                    <div class="text-center w-1/4">
+                        <p class="text-xl font-bold text-brandblue" id="cal-burned">0</p>
+                        <p class="text-xs text-gray-400">Verbrannt</p>
+                    </div>
+                </div>
+
+                <!-- Macros -->
+                <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div>
+                        <p class="text-gray-400 mb-1">Kohlenh.</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-brand h-1.5 rounded-full" id="bar-carbs" style="width: 0%"></div></div>
+                        <p><span id="txt-carbs">0</span> / <span id="goal-carbs">250</span> g</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 mb-1">Eiweiß</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-brand h-1.5 rounded-full" id="bar-protein" style="width: 0%"></div></div>
+                        <p><span id="txt-protein">0</span> / <span id="goal-protein">160</span> g</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 mb-1">Fett</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-brand h-1.5 rounded-full" id="bar-fat" style="width: 0%"></div></div>
+                        <p><span id="txt-fat">0</span> / <span id="goal-fat">70</span> g</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 mb-1">Zucker</p>
+                        <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1"><div class="bg-red-500 h-1.5 rounded-full" id="bar-sugar" style="width: 0%"></div></div>
+                        <p><span id="txt-sugar">0</span> / <span id="goal-sugar">50</span> g</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Supplements -->
+            <section class="bg-cardbg rounded-2xl p-4 border border-gray-800 shadow-lg">
+                <h2 class="font-bold text-sm text-gray-400 mb-3 uppercase tracking-wider">Ergänzung</h2>
+                <div class="grid grid-cols-2 gap-2" id="supplements-list"></div>
+            </section>
+
+            <!-- Nutrition Actions -->
+            <section class="flex gap-3">
+                <button onclick="startScanner()" class="flex-1 bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-lg">
+                    📷 Barcode
+                </button>
+                <button onclick="openManualModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-lg">
+                    ✍️ Manuell
+                </button>
+            </section>
+
+            <!-- Food List -->
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg min-h-[150px]">
+                <h2 class="font-bold text-lg mb-4">Mahlzeiten Heute</h2>
+                <div id="food-list" class="space-y-3"></div>
+            </section>
+        </div>
+
+        <!-- ================= WORKOUT VIEW ================= -->
+        <div id="view-workout" class="tab-view hidden space-y-4">
             
-            <div class="flex items-center justify-between mb-6">
-                <div class="text-center w-1/4">
-                    <p class="text-xl font-bold" id="cal-eaten">0</p>
-                    <p class="text-xs text-gray-400">Gegessen</p>
+            <!-- Gespeicherte Routinen -->
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-lg">Meine Routinen</h2>
+                    <button onclick="openRoutineModal()" class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-lg text-white transition">+ Neue Routine</button>
                 </div>
-                
-                <div class="w-1/2 relative">
-                    <svg viewBox="0 0 36 36" class="circular-chart brand">
-                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path class="circle" id="cal-circle" stroke="#10b981" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <text x="18" y="17" class="percentage" id="cal-left">2400</text>
-                        <text x="18" y="22" class="subtext">Übrig</text>
-                    </svg>
+                <div id="routines-list" class="space-y-3">
+                    <!-- Routines generated here -->
                 </div>
-                
-                <div class="text-center w-1/4">
-                    <p class="text-xl font-bold">0</p>
-                    <p class="text-xs text-gray-400">Verbrannt</p>
-                </div>
-            </div>
+            </section>
 
-            <!-- Macros -->
-            <div class="grid grid-cols-4 gap-2 text-center text-xs">
-                <!-- Carbs -->
-                <div>
-                    <p class="text-gray-400 mb-1">Kohlenhydrate</p>
-                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
-                        <div class="bg-brand h-1.5 rounded-full" id="bar-carbs" style="width: 0%"></div>
-                    </div>
-                    <p><span id="txt-carbs">0</span> / <span id="goal-carbs">250</span> g</p>
-                </div>
-                <!-- Protein -->
-                <div>
-                    <p class="text-gray-400 mb-1">Eiweiß</p>
-                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
-                        <div class="bg-brand h-1.5 rounded-full" id="bar-protein" style="width: 0%"></div>
-                    </div>
-                    <p><span id="txt-protein">0</span> / <span id="goal-protein">160</span> g</p>
-                </div>
-                <!-- Fat -->
-                <div>
-                    <p class="text-gray-400 mb-1">Fett</p>
-                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
-                        <div class="bg-brand h-1.5 rounded-full" id="bar-fat" style="width: 0%"></div>
-                    </div>
-                    <p><span id="txt-fat">0</span> / <span id="goal-fat">70</span> g</p>
-                </div>
-                <!-- Sugar -->
-                <div>
-                    <p class="text-gray-400 mb-1">Zucker</p>
-                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
-                        <div class="bg-red-500 h-1.5 rounded-full" id="bar-sugar" style="width: 0%"></div>
-                    </div>
-                    <p><span id="txt-sugar">0</span> / <span id="goal-sugar">50</span> g</p>
-                </div>
-            </div>
-        </section>
+            <!-- Schnelles Workout -->
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+                <h2 class="font-bold text-lg mb-4">Schnelles Workout</h2>
+                <label class="text-sm text-gray-400 mb-1 block">Aktivität</label>
+                <select id="workout-type" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4 focus:outline-none focus:border-brandblue">
+                    <option value="4.5">Krafttraining / Gym (Mittel)</option>
+                    <option value="6.0">Krafttraining / Gym (Intensiv)</option>
+                    <option value="9.8">Laufen (ca. 10 km/h)</option>
+                    <option value="7.5">Radfahren (Mittel)</option>
+                    <option value="4.3">Schnelles Gehen / Spazieren</option>
+                    <option value="8.0">Fortnite (Rage/Adrenalin - Spaß 😉)</option>
+                </select>
+                <label class="text-sm text-gray-400 mb-1 block">Dauer (Minuten)</label>
+                <input type="number" id="workout-mins" placeholder="z.B. 60" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4 focus:outline-none focus:border-brandblue">
+                <button onclick="addWorkout()" class="w-full bg-brandblue hover:bg-blue-400 text-white font-bold py-3 rounded-xl transition shadow-lg">
+                    Workout eintragen
+                </button>
+            </section>
+            
+            <!-- Heute Absolviert -->
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg min-h-[150px]">
+                <h2 class="font-bold text-lg mb-4">Heute absolviert</h2>
+                <div id="workout-list" class="space-y-3"></div>
+            </section>
+        </div>
 
-        <!-- Supplements Card -->
-        <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-lg">Nahrungsergänzung</h2>
-                <span class="text-xs text-gray-400">Heute</span>
-            </div>
-            <div class="space-y-3" id="supplements-list">
-                <!-- Dynamically filled -->
-            </div>
-        </section>
+        <!-- ================= HISTORY VIEW (VERLAUF) ================= -->
+        <div id="view-history" class="tab-view hidden space-y-4">
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+                <h2 class="font-bold text-lg mb-4">Verlauf / Kalender</h2>
+                <p class="text-sm text-gray-400 mb-6">Hier siehst du deine vergangenen Tage im Überblick.</p>
+                <div id="history-list" class="space-y-4">
+                    <!-- History generated here -->
+                </div>
+            </section>
+        </div>
 
-        <!-- Nutrition Actions -->
-        <section class="flex gap-3">
-            <button onclick="startScanner()" class="flex-1 bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition">
-                📷 Barcode scannen
-            </button>
-            <button onclick="openManualModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition">
-                ✍️ Manuell eintragen
-            </button>
-        </section>
+        <!-- ================= GOALS VIEW ================= -->
+        <div id="view-goals" class="tab-view hidden space-y-4">
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+                <h2 class="font-bold text-lg mb-4">Dein Projekt</h2>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="text-xs text-gray-400">Aktuelles Gewicht (kg)</label>
+                        <input type="number" id="user-weight" step="0.1" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white" oninput="calculateGoalProjection()">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">Zielgewicht (kg)</label>
+                        <input type="number" id="user-target-weight" step="0.1" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white" oninput="calculateGoalProjection()">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="text-xs text-gray-400">Zieldatum</label>
+                    <input type="date" id="user-target-date" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white" onchange="calculateGoalProjection()">
+                </div>
+                <div id="goal-projection-box" class="bg-gray-800 rounded-lg p-4 text-sm text-gray-300 border border-gray-700"></div>
+                <button onclick="saveUserMetrics()" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-xl transition">Werte aktualisieren</button>
+            </section>
 
-        <!-- Food List -->
-        <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg min-h-[150px]">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-lg">Ernährung</h2>
-            </div>
-            <div id="food-list" class="space-y-3">
-                <!-- Foods go here -->
-                <p class="text-center text-gray-500 text-sm py-4">Noch nichts eingetragen für heute.</p>
-            </div>
-        </section>
+            <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+                <h2 class="font-bold text-lg mb-4">Feste Tagesziele</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center"><label class="text-sm">Kalorien (Basis)</label><input type="number" id="set-goal-kcal" class="bg-appbg border border-gray-700 rounded-lg p-2 w-20 text-right text-white"></div>
+                    <div class="flex justify-between items-center"><label class="text-sm">Kohlenhydrate (g)</label><input type="number" id="set-goal-carbs" class="bg-appbg border border-gray-700 rounded-lg p-2 w-20 text-right text-white"></div>
+                    <div class="flex justify-between items-center"><label class="text-sm">Eiweiß (g)</label><input type="number" id="set-goal-prot" class="bg-appbg border border-gray-700 rounded-lg p-2 w-20 text-right text-white"></div>
+                    <div class="flex justify-between items-center"><label class="text-sm">Fett (g)</label><input type="number" id="set-goal-fat" class="bg-appbg border border-gray-700 rounded-lg p-2 w-20 text-right text-white"></div>
+                    <div class="flex justify-between items-center"><label class="text-sm">Zucker-Limit (g)</label><input type="number" id="set-goal-sugar" class="bg-appbg border border-gray-700 rounded-lg p-2 w-20 text-right text-white"></div>
+                </div>
+                <button onclick="saveGoals()" class="w-full mt-4 bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl transition shadow-lg">Tagesziele speichern</button>
+            </section>
+        </div>
 
     </main>
 
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full bg-cardbg border-t border-gray-800 flex justify-around p-3 pb-safe z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+        <button onclick="switchTab('diary')" id="nav-diary" class="text-brand font-bold flex flex-col items-center">
+            <span class="text-xl">🍽️</span><span class="text-[10px] mt-1">Tagebuch</span>
+        </button>
+        <button onclick="switchTab('workout')" id="nav-workout" class="text-gray-500 hover:text-white flex flex-col items-center transition">
+            <span class="text-xl">💪</span><span class="text-[10px] mt-1">Workout</span>
+        </button>
+        <button onclick="switchTab('history')" id="nav-history" class="text-gray-500 hover:text-white flex flex-col items-center transition">
+            <span class="text-xl">📅</span><span class="text-[10px] mt-1">Verlauf</span>
+        </button>
+        <button onclick="switchTab('goals')" id="nav-goals" class="text-gray-500 hover:text-white flex flex-col items-center transition">
+            <span class="text-xl">🎯</span><span class="text-[10px] mt-1">Ziele</span>
+        </button>
+    </nav>
+
+    <!-- Modals -->
     <!-- Scanner Modal -->
     <div id="scanner-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
         <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700">
             <div class="p-4 border-b border-gray-800 flex justify-between items-center">
                 <h3 class="font-bold">Barcode scannen</h3>
-                <button onclick="stopScanner()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+                <button onclick="stopScanner()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
-            <div id="reader" class="w-full bg-black"></div>
+            <div id="reader" class="w-full bg-black min-h-[250px]"></div>
             <div class="p-4 text-center text-sm text-gray-400" id="scanner-status">
                 Kamera auf den Barcode richten...
             </div>
         </div>
     </div>
 
-    <!-- Amount / Manual Entry Modal -->
+    <!-- Manual Entry Modal -->
     <div id="manual-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
         <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700 p-5">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg" id="modal-title">Lebensmittel hinzufügen</h3>
-                <button onclick="closeModals()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+                <h3 class="font-bold text-lg" id="modal-title">Hinzufügen</h3>
+                <button onclick="closeModals()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
-            
-            <input type="text" id="food-name" placeholder="Name (z.B. Haferflocken)" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-3 focus:outline-none focus:border-brand">
-            
+            <input type="text" id="food-name" placeholder="Name" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-3">
             <div class="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                    <label class="text-xs text-gray-400 ml-1">Menge (g / ml)</label>
-                    <input type="number" id="food-amount" value="100" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand" oninput="calculatePreview()">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 ml-1">Kalorien (kcal pro 100g)</label>
-                    <input type="number" id="food-kcal-100" placeholder="kcal" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand" oninput="calculatePreview()">
-                </div>
+                <div><label class="text-xs text-gray-400 ml-1">Menge (g/ml)</label><input type="number" id="food-amount" value="100" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400 ml-1">kcal (pro 100g)</label><input type="number" id="food-kcal-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white" oninput="calculatePreview()"></div>
             </div>
-            
             <div class="grid grid-cols-4 gap-2 mb-4">
-                <div>
-                    <label class="text-xs text-gray-400 ml-1">Kohlenh.</label>
-                    <input type="number" id="food-carbs-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 ml-1">Eiweiß</label>
-                    <input type="number" id="food-prot-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 ml-1">Fett</label>
-                    <input type="number" id="food-fat-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 ml-1">Zucker</label>
-                    <input type="number" id="food-sugar-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
-                </div>
+                <div><label class="text-xs text-gray-400">Kohlenh.</label><input type="number" id="food-carbs-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400">Eiweiß</label><input type="number" id="food-prot-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400">Fett</label><input type="number" id="food-fat-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
+                <div><label class="text-xs text-gray-400">Zucker</label><input type="number" id="food-sugar-100" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()"></div>
             </div>
-
             <div class="bg-gray-800 rounded-lg p-3 mb-4 text-sm flex justify-between items-center border border-gray-700">
-                <span class="text-gray-300">Wird hinzugefügt:</span>
-                <span class="font-bold text-brand" id="preview-kcal">0 kcal</span>
+                <span class="text-gray-300">Wird hinzugefügt:</span><span class="font-bold text-brand" id="preview-kcal">0 kcal</span>
             </div>
-
-            <button onclick="saveFood()" class="w-full bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl transition">
-                Speichern
-            </button>
+            <button onclick="saveFood()" class="w-full bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl transition">Speichern</button>
         </div>
     </div>
 
-    <!-- Goals Modal -->
-    <div id="goals-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
-        <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700 p-5">
-            <h3 class="font-bold text-lg mb-4">Tägliche Ziele anpassen</h3>
-            
-            <div class="space-y-3 mb-5">
-                <div class="flex justify-between items-center">
-                    <label class="text-sm">Kalorien (kcal)</label>
-                    <input type="number" id="set-goal-kcal" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm">Kohlenhydrate (g)</label>
-                    <input type="number" id="set-goal-carbs" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm">Eiweiß (g)</label>
-                    <input type="number" id="set-goal-prot" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm">Fett (g)</label>
-                    <input type="number" id="set-goal-fat" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm">Zucker (g) Limit</label>
-                    <input type="number" id="set-goal-sugar" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
-                </div>
+    <!-- Routine Builder Modal -->
+    <div id="routine-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
+        <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700 p-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">Neue Routine erstellen</h3>
+                <button onclick="closeModals()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
+            <label class="text-sm text-gray-400 mb-1 block">Name der Routine</label>
+            <input type="text" id="routine-name" placeholder="z.B. Push Day" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4">
+            
+            <label class="text-sm text-gray-400 mb-1 block">Übungen (eine pro Zeile)</label>
+            <textarea id="routine-exercises" rows="4" placeholder="- Bankdrücken 3x10
+- Schulterdrücken 3x10
+- Trizeps..." class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4 focus:outline-none"></textarea>
+            
+            <label class="text-sm text-gray-400 mb-1 block">Standard Dauer (Minuten)</label>
+            <input type="number" id="routine-mins" placeholder="z.B. 90" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-4">
+            
+            <label class="text-sm text-gray-400 mb-1 block">Intensität</label>
+            <select id="routine-type" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-6">
+                <option value="4.5">Krafttraining (Mittel)</option>
+                <option value="6.0">Krafttraining (Intensiv)</option>
+                <option value="8.0">HIIT / Extrem (Sehr Hoch)</option>
+            </select>
 
-            <button onclick="saveGoals()" class="w-full bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl transition">
-                Ziele speichern
-            </button>
-            <button onclick="closeModals()" class="w-full mt-2 bg-transparent text-gray-400 py-2 rounded-xl">Abbrechen</button>
+            <button onclick="saveRoutine()" class="w-full bg-brandpurple hover:bg-purple-400 text-white font-bold py-3 rounded-xl transition shadow-lg">Routine speichern</button>
+        </div>
+    </div>
+
+    <!-- Routine Viewer Modal -->
+    <div id="routine-view-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
+        <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700 p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg" id="view-routine-name">Routine</h3>
+                <button onclick="closeModals()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="bg-appbg border border-gray-800 rounded-lg p-4 mb-4 whitespace-pre-wrap text-sm text-gray-300" id="view-routine-exercises">
+                <!-- Exercises listed here -->
+            </div>
+            <div class="flex gap-2">
+                <button onclick="logRoutineFromView()" class="flex-1 bg-brandblue hover:bg-blue-400 text-white font-bold py-3 rounded-xl transition">Als Workout eintragen</button>
+                <button onclick="deleteCurrentRoutine()" class="bg-red-500 hover:bg-red-400 text-white font-bold px-4 rounded-xl transition">🗑️</button>
+            </div>
         </div>
     </div>
 
     <script>
         // --- State Management ---
-        const TODAY = new Date().toISOString().split('T')[0];
-        
+        // Generiere das Datum im deutschen Format für die Anzeige
+        const todayObj = new Date();
+        const TODAY = todayObj.toISOString().split('T')[0];
+        const dateString = todayObj.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+        document.getElementById('header-date').innerText = dateString;
+
+        // Base Data Structure (v3)
         let state = {
-            date: TODAY,
-            goals: { kcal: 2400, carbs: 250, protein: 160, fat: 70, sugar: 50 }, // Angepasst auf ~80kg
-            supps: {
-                creatine: { name: 'Kreatin (5g)', done: false },
-                vitD: { name: 'Vitamin D3+K2', done: false },
-                magnesium: { name: 'Magnesium', done: false },
-                omega3: { name: 'Omega-3', done: false }
-            },
-            foods: []
+            version: 3,
+            user: { weight: 80, targetWeight: 75, targetDate: '' },
+            goals: { kcal: 2400, carbs: 250, protein: 160, fat: 70, sugar: 50 },
+            routines: [], // Array of objects: { name, exercises, mins, met }
+            history: {}   // Key: 'YYYY-MM-DD' => Value: { foods: [], workouts: [], supps: {} }
         };
 
+        let activeRoutineIndex = null;
         let html5QrcodeScanner = null;
 
-        // --- Initialization ---
+        // --- Init & Migration ---
         function init() {
-            loadState();
+            migrateAndLoadState();
+            ensureTodayExists();
+            populateGoalInputs();
+            calculateGoalProjection();
             renderUI();
         }
 
-        function loadState() {
-            const saved = localStorage.getItem('nutriTrackerState');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed.date === TODAY) {
-                    state = parsed;
-                } else {
-                    // Neuer Tag -> reset foods and supps, keep goals
-                    state.goals = parsed.goals || state.goals;
-                    saveState(); 
-                }
+        function migrateAndLoadState() {
+            const savedV3 = localStorage.getItem('nutriTrackerV3');
+            if (savedV3) {
+                state = JSON.parse(savedV3);
             } else {
+                // Migration from v2 if exists
+                const savedV2 = localStorage.getItem('nutriTrackerState2');
+                if (savedV2) {
+                    const parsed = JSON.parse(savedV2);
+                    state.user = parsed.user || state.user;
+                    state.goals = parsed.goals || state.goals;
+                    // Move their current day foods/workouts into history under TODAY
+                    if (parsed.date) {
+                        state.history[parsed.date] = {
+                            foods: parsed.foods || [],
+                            workouts: parsed.workouts || [],
+                            supps: parsed.supps || {
+                                creatine: { name: 'Kreatin', done: false },
+                                vitD: { name: 'Vit D3+K2', done: false },
+                                magnesium: { name: 'Magnesium', done: false },
+                                omega3: { name: 'Omega-3', done: false }
+                            }
+                        };
+                    }
+                    localStorage.setItem('nutriTrackerV3', JSON.stringify(state));
+                }
+            }
+        }
+
+        function ensureTodayExists() {
+            if (!state.history[TODAY]) {
+                state.history[TODAY] = {
+                    foods: [],
+                    workouts: [],
+                    supps: {
+                        creatine: { name: 'Kreatin', done: false },
+                        vitD: { name: 'Vit D3+K2', done: false },
+                        magnesium: { name: 'Magnesium', done: false },
+                        omega3: { name: 'Omega-3', done: false }
+                    }
+                };
                 saveState();
             }
         }
 
         function saveState() {
-            localStorage.setItem('nutriTrackerState', JSON.stringify(state));
+            localStorage.setItem('nutriTrackerV3', JSON.stringify(state));
         }
 
-        // --- UI Rendering ---
-        function renderUI() {
-            let totalKcal = 0, totalCarbs = 0, totalProt = 0, totalFat = 0, totalSugar = 0;
+        // --- Tabs ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
             
-            // Render Foods
+            ['diary', 'workout', 'history', 'goals'].forEach(id => {
+                let btn = document.getElementById(`nav-${id}`);
+                btn.classList.remove('text-brand', 'font-bold', 'text-brandblue', 'text-brandpurple');
+                btn.classList.add('text-gray-500');
+            });
+            
+            let activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.classList.remove('text-gray-500');
+            
+            let highlightColor = 'text-brand';
+            if (tabId === 'workout') highlightColor = 'text-brandblue';
+            if (tabId === 'history') highlightColor = 'text-brandpurple';
+            activeBtn.classList.add(highlightColor, 'font-bold');
+            
+            const titles = { diary: 'Tagebuch', workout: 'Workout', history: 'Verlauf', goals: 'Ziele' };
+            document.getElementById('header-title').innerText = titles[tabId];
+            
+            renderUI();
+        }
+
+        // --- Core UI Render ---
+        function renderUI() {
+            const todayData = state.history[TODAY];
+            let totalKcal = 0, totalCarbs = 0, totalProt = 0, totalFat = 0, totalSugar = 0, totalBurned = 0;
+            
+            // 1. Calculate Foods (Today)
             const foodListEl = document.getElementById('food-list');
             foodListEl.innerHTML = '';
-            
-            if(state.foods.length === 0) {
-                foodListEl.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">Noch nichts eingetragen für heute.</p>';
+            if(todayData.foods.length === 0) {
+                foodListEl.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">Noch nichts gegessen.</p>';
             } else {
-                state.foods.forEach((food, index) => {
+                todayData.foods.forEach((food, index) => {
                     const k = (food.kcal100 * food.amount / 100).toFixed(0);
                     const p = (food.prot100 * food.amount / 100).toFixed(1);
-                    
                     totalKcal += parseFloat(k);
                     totalCarbs += (food.carbs100 * food.amount / 100);
                     totalProt += (food.prot100 * food.amount / 100);
@@ -312,52 +431,88 @@
                     totalSugar += (food.sugar100 * food.amount / 100);
 
                     foodListEl.innerHTML += `
-                        <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">🍽️</div>
-                                <div>
-                                    <p class="font-bold text-sm text-white">${food.name}</p>
-                                    <p class="text-xs text-gray-400">${food.amount}g • ${k} kcal • ${p}g EW</p>
-                                </div>
+                        <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-700">
+                            <div>
+                                <p class="font-bold text-sm text-white">${food.name}</p>
+                                <p class="text-xs text-gray-400">${food.amount}g • ${k} kcal • ${p}g EW</p>
                             </div>
-                            <button onclick="deleteFood(${index})" class="text-gray-500 hover:text-red-500">🗑️</button>
-                        </div>
-                    `;
+                            <button onclick="deleteFood(${index})" class="text-gray-500 hover:text-red-500 text-xl px-2">&times;</button>
+                        </div>`;
                 });
             }
 
-            // Update Dashboard Values
+            // 2. Calculate Workouts (Today)
+            const workListEl = document.getElementById('workout-list');
+            workListEl.innerHTML = '';
+            if(todayData.workouts.length === 0) {
+                workListEl.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">Noch kein Workout heute.</p>';
+            } else {
+                todayData.workouts.forEach((w, index) => {
+                    totalBurned += w.burned;
+                    const wName = w.name || "Training";
+                    workListEl.innerHTML += `
+                        <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-700">
+                            <div>
+                                <p class="font-bold text-sm text-white">${wName} (${w.mins} Min.)</p>
+                                <p class="text-xs text-brandblue">+ ${w.burned} kcal verbrannt</p>
+                            </div>
+                            <button onclick="deleteWorkout(${index})" class="text-gray-500 hover:text-red-500 text-xl px-2">&times;</button>
+                        </div>`;
+                });
+            }
+
+            // 3. Update Dashboard Dashboard
             document.getElementById('cal-eaten').innerText = totalKcal.toFixed(0);
-            let calLeft = state.goals.kcal - totalKcal;
+            document.getElementById('cal-burned').innerText = totalBurned;
+            
+            let calLeft = (state.goals.kcal + totalBurned) - totalKcal;
             document.getElementById('cal-left').innerText = Math.max(0, calLeft).toFixed(0);
             
-            // Circular Progress
-            let calPercent = Math.min(100, (totalKcal / state.goals.kcal) * 100);
+            let totalBudget = state.goals.kcal + totalBurned;
+            let calPercent = Math.min(100, (totalKcal / totalBudget) * 100);
             document.getElementById('cal-circle').setAttribute('stroke-dasharray', `${calPercent}, 100`);
-            document.getElementById('cal-circle').setAttribute('stroke', calPercent >= 100 ? '#ef4444' : '#10b981'); // Red if over
+            document.getElementById('cal-circle').setAttribute('stroke', calPercent >= 100 ? '#ef4444' : '#10b981'); 
 
-            // Linear Progress Bars
             updateBar('carbs', totalCarbs, state.goals.carbs);
             updateBar('protein', totalProt, state.goals.protein);
             updateBar('fat', totalFat, state.goals.fat);
             
-            // Sugar logic (red bar if over limit)
             let sugarPercent = Math.min(100, (totalSugar / state.goals.sugar) * 100);
             document.getElementById('bar-sugar').style.width = `${sugarPercent}%`;
             document.getElementById('txt-sugar').innerText = totalSugar.toFixed(0);
             document.getElementById('goal-sugar').innerText = state.goals.sugar;
 
-            // Render Supplements
+            // 4. Render Supplements (Today)
             const suppListEl = document.getElementById('supplements-list');
             suppListEl.innerHTML = '';
-            for (const [key, supp] of Object.entries(state.supps)) {
+            for (const [key, supp] of Object.entries(todayData.supps)) {
                 suppListEl.innerHTML += `
-                    <label class="flex items-center justify-between p-3 bg-gray-800 rounded-xl cursor-pointer hover:bg-gray-700 transition">
-                        <span class="${supp.done ? 'text-gray-400 line-through' : 'text-white'} font-medium text-sm">${supp.name}</span>
-                        <input type="checkbox" ${supp.done ? 'checked' : ''} onchange="toggleSupp('${key}')" class="w-5 h-5 accent-brand bg-gray-700 border-gray-600 rounded focus:ring-brand">
-                    </label>
-                `;
+                    <label class="flex items-center justify-between p-2 bg-gray-800 rounded-lg cursor-pointer border border-gray-700">
+                        <span class="${supp.done ? 'text-gray-500 line-through' : 'text-white'} text-xs font-medium">${supp.name}</span>
+                        <input type="checkbox" ${supp.done ? 'checked' : ''} onchange="toggleSupp('${key}')" class="w-4 h-4 accent-brand rounded">
+                    </label>`;
             }
+
+            // 5. Render Routines (Workout Tab)
+            const routinesEl = document.getElementById('routines-list');
+            routinesEl.innerHTML = '';
+            if (!state.routines || state.routines.length === 0) {
+                routinesEl.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">Noch keine Routinen angelegt.</p>';
+            } else {
+                state.routines.forEach((r, index) => {
+                    routinesEl.innerHTML += `
+                        <div class="bg-gray-800 p-3 rounded-xl flex justify-between items-center border border-gray-700 shadow-sm">
+                            <div class="cursor-pointer flex-1" onclick="viewRoutine(${index})">
+                                <p class="font-bold text-sm text-white">${r.name}</p>
+                                <p class="text-xs text-gray-400">${r.mins} Min. • Tippe für Details</p>
+                            </div>
+                            <button onclick="logRoutineDirectly(${index})" class="bg-brandpurple hover:bg-purple-400 text-white text-xs font-bold py-2 px-3 rounded-lg transition ml-2">Starten</button>
+                        </div>`;
+                });
+            }
+
+            // 6. Render History (Calendar Tab)
+            renderHistory();
         }
 
         function updateBar(macro, current, goal) {
@@ -367,24 +522,198 @@
             document.getElementById(`goal-${macro}`).innerText = goal;
         }
 
-        // --- Interactions ---
-        function toggleSupp(key) {
-            state.supps[key].done = !state.supps[key].done;
+        // --- History Logic ---
+        function renderHistory() {
+            const histEl = document.getElementById('history-list');
+            histEl.innerHTML = '';
+            
+            // Get all dates, sort descending (newest first)
+            const dates = Object.keys(state.history).sort((a, b) => b.localeCompare(a));
+            
+            dates.forEach(dateStr => {
+                const data = state.history[dateStr];
+                let tKcal = 0, tBurned = 0;
+                
+                data.foods.forEach(f => tKcal += (f.kcal100 * f.amount / 100));
+                data.workouts.forEach(w => tBurned += w.burned);
+                
+                // Format Date for display
+                const dObj = new Date(dateStr);
+                const displayDate = dObj.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+                
+                const isToday = dateStr === TODAY;
+                const headerClass = isToday ? 'text-brand font-bold' : 'text-white font-bold';
+                const label = isToday ? `${displayDate} (Heute)` : displayDate;
+
+                histEl.innerHTML += `
+                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-sm relative overflow-hidden">
+                        <div class="mb-3 ${headerClass}">${label}</div>
+                        
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="bg-gray-900 p-2 rounded-lg text-center">
+                                <span class="block text-gray-400 text-xs mb-1">Gegessen</span>
+                                <span class="font-bold text-brand">${tKcal.toFixed(0)} kcal</span>
+                            </div>
+                            <div class="bg-gray-900 p-2 rounded-lg text-center">
+                                <span class="block text-gray-400 text-xs mb-1">Workout</span>
+                                <span class="font-bold text-brandblue">${tBurned} kcal</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 text-xs text-gray-400 flex justify-between">
+                            <span>${data.foods.length} Mahlzeiten</span>
+                            <span>${data.workouts.length} Workouts</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Actions ---
+        function toggleSupp(key) { state.history[TODAY].supps[key].done = !state.history[TODAY].supps[key].done; saveState(); renderUI(); }
+        function deleteFood(index) { state.history[TODAY].foods.splice(index, 1); saveState(); renderUI(); }
+        function deleteWorkout(index) { state.history[TODAY].workouts.splice(index, 1); saveState(); renderUI(); }
+
+        function addWorkout(name = "Freies Training", explicitMet = null, explicitMins = null) {
+            let met = explicitMet !== null ? explicitMet : parseFloat(document.getElementById('workout-type').value);
+            let mins = explicitMins !== null ? explicitMins : parseInt(document.getElementById('workout-mins').value);
+            if(!mins || mins <= 0) return alert("Bitte Dauer eingeben!");
+            
+            let weight = state.user.weight || 80;
+            let burned = Math.round((met * weight) * (mins / 60));
+            
+            state.history[TODAY].workouts.push({ name, mins, met, burned });
+            document.getElementById('workout-mins').value = '';
+            saveState();
+            renderUI();
+            
+            if(!explicitMet) alert(`Workout hinzugefügt! (${burned} kcal verbrannt)`);
+        }
+
+        // --- Routine Actions ---
+        function openRoutineModal() {
+            document.getElementById('routine-name').value = '';
+            document.getElementById('routine-exercises').value = '';
+            document.getElementById('routine-mins').value = 60;
+            document.getElementById('routine-modal').classList.remove('hidden');
+        }
+
+        function saveRoutine() {
+            const name = document.getElementById('routine-name').value || 'Neue Routine';
+            const exercises = document.getElementById('routine-exercises').value;
+            const mins = parseInt(document.getElementById('routine-mins').value) || 60;
+            const met = parseFloat(document.getElementById('routine-type').value);
+
+            if(!state.routines) state.routines = [];
+            state.routines.push({ name, exercises, mins, met });
+            saveState();
+            closeModals();
+            renderUI();
+        }
+
+        function viewRoutine(index) {
+            activeRoutineIndex = index;
+            const r = state.routines[index];
+            document.getElementById('view-routine-name').innerText = r.name;
+            document.getElementById('view-routine-exercises').innerText = r.exercises || "Keine Übungen hinterlegt.";
+            document.getElementById('routine-view-modal').classList.remove('hidden');
+        }
+
+        function logRoutineFromView() {
+            logRoutineDirectly(activeRoutineIndex);
+            closeModals();
+        }
+
+        function logRoutineDirectly(index) {
+            const r = state.routines[index];
+            addWorkout(r.name, r.met, r.mins);
+            alert(`Routine "${r.name}" als Workout (${r.mins} Min.) eingetragen!`);
+        }
+
+        function deleteCurrentRoutine() {
+            if(confirm("Routine wirklich löschen?")) {
+                state.routines.splice(activeRoutineIndex, 1);
+                saveState();
+                closeModals();
+                renderUI();
+            }
+        }
+
+        // --- Goals & Projection ---
+        function populateGoalInputs() {
+            document.getElementById('user-weight').value = state.user.weight;
+            document.getElementById('user-target-weight').value = state.user.targetWeight;
+            document.getElementById('user-target-date').value = state.user.targetDate;
+            
+            document.getElementById('set-goal-kcal').value = state.goals.kcal;
+            document.getElementById('set-goal-carbs').value = state.goals.carbs;
+            document.getElementById('set-goal-prot').value = state.goals.protein;
+            document.getElementById('set-goal-fat').value = state.goals.fat;
+            document.getElementById('set-goal-sugar').value = state.goals.sugar;
+        }
+
+        function saveUserMetrics() {
+            state.user.weight = parseFloat(document.getElementById('user-weight').value) || 80;
+            state.user.targetWeight = parseFloat(document.getElementById('user-target-weight').value) || 75;
+            state.user.targetDate = document.getElementById('user-target-date').value;
+            saveState();
+            calculateGoalProjection();
+            renderUI(); 
+        }
+
+        function saveGoals() {
+            state.goals.kcal = parseFloat(document.getElementById('set-goal-kcal').value) || 2400;
+            state.goals.carbs = parseFloat(document.getElementById('set-goal-carbs').value) || 250;
+            state.goals.protein = parseFloat(document.getElementById('set-goal-prot').value) || 160;
+            state.goals.fat = parseFloat(document.getElementById('set-goal-fat').value) || 70;
+            state.goals.sugar = parseFloat(document.getElementById('set-goal-sugar').value) || 50;
             saveState();
             renderUI();
         }
 
-        function deleteFood(index) {
-            state.foods.splice(index, 1);
-            saveState();
-            renderUI();
+        function calculateGoalProjection() {
+            const w = parseFloat(document.getElementById('user-weight').value);
+            const tW = parseFloat(document.getElementById('user-target-weight').value);
+            const dStr = document.getElementById('user-target-date').value;
+            const box = document.getElementById('goal-projection-box');
+            
+            if(!w || !tW || !dStr) {
+                box.innerHTML = "Bitte fülle alle Felder aus, um deine Projektion zu sehen.";
+                return;
+            }
+
+            const targetDate = new Date(dStr);
+            const today = new Date();
+            const diffTime = targetDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if(diffDays <= 0) {
+                box.innerHTML = "<span class='text-red-400'>Das Zieldatum liegt in der Vergangenheit!</span>";
+                return;
+            }
+
+            const diffWeight = w - tW; 
+            const isLoss = diffWeight > 0;
+            const totalKcalDiff = Math.abs(diffWeight) * 7000;
+            const dailyDiff = Math.round(totalKcalDiff / diffDays);
+            
+            let text = `Noch <strong class="text-white">${diffDays} Tage</strong>. `;
+            if(Math.abs(diffWeight) < 0.2) {
+                text += `Du bist an deinem Zielgewicht!`;
+            } else if(isLoss) {
+                text += `Für -${diffWeight.toFixed(1)}kg brauchst du ein Defizit von <strong class="text-brand">${dailyDiff} kcal</strong> täglich.`;
+            } else {
+                text += `Für +${Math.abs(diffWeight).toFixed(1)}kg brauchst du einen Überschuss von <strong class="text-brandblue">+${dailyDiff} kcal</strong> täglich.`;
+            }
+            box.innerHTML = text;
         }
 
         // --- Modals & Forms ---
         function closeModals() {
             document.getElementById('scanner-modal').classList.add('hidden');
             document.getElementById('manual-modal').classList.add('hidden');
-            document.getElementById('goals-modal').classList.add('hidden');
+            document.getElementById('routine-modal').classList.add('hidden');
+            document.getElementById('routine-view-modal').classList.add('hidden');
             if(html5QrcodeScanner) {
                 html5QrcodeScanner.clear().catch(e => console.log(e));
                 html5QrcodeScanner = null;
@@ -416,12 +745,11 @@
         function calculatePreview() {
             const amount = parseFloat(document.getElementById('food-amount').value) || 0;
             const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
-            const total = (kcal100 * amount / 100).toFixed(0);
-            document.getElementById('preview-kcal').innerText = `${total} kcal`;
+            document.getElementById('preview-kcal').innerText = `${(kcal100 * amount / 100).toFixed(0)} kcal`;
         }
 
         function saveFood() {
-            const name = document.getElementById('food-name').value || 'Unbekanntes Lebensmittel';
+            const name = document.getElementById('food-name').value || 'Unbekannt';
             const amount = parseFloat(document.getElementById('food-amount').value) || 100;
             const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
             const carbs100 = parseFloat(document.getElementById('food-carbs-100').value) || 0;
@@ -429,94 +757,62 @@
             const fat100 = parseFloat(document.getElementById('food-fat-100').value) || 0;
             const sugar100 = parseFloat(document.getElementById('food-sugar-100').value) || 0;
 
-            state.foods.push({ name, amount, kcal100, carbs100, prot100, fat100, sugar100 });
-            saveState();
-            closeModals();
-            renderUI();
+            state.history[TODAY].foods.push({ name, amount, kcal100, carbs100, prot100, fat100, sugar100 });
+            saveState(); closeModals(); renderUI();
         }
 
-        function openGoalsModal() {
-            document.getElementById('goals-modal').classList.remove('hidden');
-            document.getElementById('set-goal-kcal').value = state.goals.kcal;
-            document.getElementById('set-goal-carbs').value = state.goals.carbs;
-            document.getElementById('set-goal-prot').value = state.goals.protein;
-            document.getElementById('set-goal-fat').value = state.goals.fat;
-            document.getElementById('set-goal-sugar').value = state.goals.sugar;
-        }
-
-        function saveGoals() {
-            state.goals.kcal = parseFloat(document.getElementById('set-goal-kcal').value) || 2400;
-            state.goals.carbs = parseFloat(document.getElementById('set-goal-carbs').value) || 250;
-            state.goals.protein = parseFloat(document.getElementById('set-goal-prot').value) || 160;
-            state.goals.fat = parseFloat(document.getElementById('set-goal-fat').value) || 70;
-            state.goals.sugar = parseFloat(document.getElementById('set-goal-sugar').value) || 50;
-            saveState();
-            closeModals();
-            renderUI();
-        }
-
-        // --- Barcode Scanner & API ---
+        // --- Scanner ---
         function startScanner() {
             document.getElementById('scanner-modal').classList.remove('hidden');
             document.getElementById('scanner-status').innerText = 'Kamera wird gestartet...';
-            
             html5QrcodeScanner = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-            
-            html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
-            .then(() => { document.getElementById('scanner-status').innerText = 'Suche Barcode...'; })
-            .catch((err) => {
-                document.getElementById('scanner-status').innerText = 'Fehler beim Kamerazugriff.';
-                console.log(err);
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                onScanSuccess, 
+                () => {}
+            ).then(() => { 
+                document.getElementById('scanner-status').innerText = 'Suche Barcode...'; 
+            }).catch((err) => {
+                document.getElementById('scanner-status').innerText = 'Kamerafehler: ' + err;
             });
         }
-
-        function stopScanner() {
-            closeModals();
-        }
+        function stopScanner() { closeModals(); }
 
         let isScanning = false;
-        function onScanSuccess(decodedText, decodedResult) {
+        function onScanSuccess(decodedText) {
             if(isScanning) return;
             isScanning = true;
             document.getElementById('scanner-status').innerText = `Gefunden: ${decodedText}. Lade Daten...`;
-            
-            html5QrcodeScanner.stop().then(() => {
-                fetchProductData(decodedText);
-            }).catch(err => console.log(err));
-        }
-
-        function onScanFailure(error) {
-            // constantly fires, ignore
+            html5QrcodeScanner.stop().then(() => fetchProductData(decodedText)).catch(e => console.log(e));
         }
 
         async function fetchProductData(barcode) {
             try {
-                const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+                const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+                if(!res.ok) throw new Error("HTTP Status " + res.status);
                 const data = await res.json();
                 
                 if (data.status === 1 && data.product) {
                     const p = data.product;
                     const nut = p.nutriments || {};
-                    
-                    const productData = {
+                    openManualModal({
                         name: p.product_name || "Unbekanntes Produkt",
                         kcal: nut['energy-kcal_100g'] || 0,
                         carbs: nut['carbohydrates_100g'] || 0,
                         protein: nut['proteins_100g'] || 0,
                         fat: nut['fat_100g'] || 0,
                         sugar: nut['sugars_100g'] || 0
-                    };
-                    
-                    closeModals();
-                    openManualModal(productData);
+                    });
                 } else {
-                    alert('Produkt nicht in der Datenbank gefunden. Bitte manuell eingeben.');
-                    closeModals();
+                    alert('Produkt nicht in der Datenbank gefunden.');
                     openManualModal();
                 }
+                closeModals();
             } catch(e) {
-                alert('Fehler bei der Internetverbindung.');
+                alert(`Netzwerk- oder API-Fehler!
+
+${e.message}`);
                 closeModals();
                 openManualModal();
             } finally {
@@ -524,7 +820,6 @@
             }
         }
 
-        // Boot
         window.onload = init;
     </script>
 </body>
