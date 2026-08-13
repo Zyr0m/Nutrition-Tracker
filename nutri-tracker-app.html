@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nutrition & Supp Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        appbg: '#121212',
+                        cardbg: '#1e1e1e',
+                        brand: '#10b981', // Yazio-style teal
+                        brandlight: '#34d399'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121212; color: #ffffff; }
+        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #333333; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 0.5s ease; }
+        .percentage { fill: #fff; font-family: sans-serif; font-size: 0.5em; text-anchor: middle; font-weight: bold; }
+        .subtext { fill: #aaa; font-family: sans-serif; font-size: 0.2em; text-anchor: middle; }
+        
+        /* Modal background */
+        .modal-bg { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
+        
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body class="antialiased pb-24">
+
+    <!-- Header -->
+    <header class="p-4 flex justify-between items-center bg-appbg sticky top-0 z-10">
+        <h1 class="text-2xl font-bold">Heute</h1>
+        <div class="text-sm bg-cardbg px-3 py-1 rounded-full text-brand border border-gray-700 cursor-pointer" onclick="openGoalsModal()">
+            ⚙️ Ziele anpassen
+        </div>
+    </header>
+
+    <main class="px-4 space-y-4">
+        
+        <!-- Dashboard Card (ähnlich Yazio) -->
+        <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-lg">Übersicht</h2>
+            </div>
+            
+            <div class="flex items-center justify-between mb-6">
+                <div class="text-center w-1/4">
+                    <p class="text-xl font-bold" id="cal-eaten">0</p>
+                    <p class="text-xs text-gray-400">Gegessen</p>
+                </div>
+                
+                <div class="w-1/2 relative">
+                    <svg viewBox="0 0 36 36" class="circular-chart brand">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle" id="cal-circle" stroke="#10b981" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="17" class="percentage" id="cal-left">2400</text>
+                        <text x="18" y="22" class="subtext">Übrig</text>
+                    </svg>
+                </div>
+                
+                <div class="text-center w-1/4">
+                    <p class="text-xl font-bold">0</p>
+                    <p class="text-xs text-gray-400">Verbrannt</p>
+                </div>
+            </div>
+
+            <!-- Macros -->
+            <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                <!-- Carbs -->
+                <div>
+                    <p class="text-gray-400 mb-1">Kohlenhydrate</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
+                        <div class="bg-brand h-1.5 rounded-full" id="bar-carbs" style="width: 0%"></div>
+                    </div>
+                    <p><span id="txt-carbs">0</span> / <span id="goal-carbs">250</span> g</p>
+                </div>
+                <!-- Protein -->
+                <div>
+                    <p class="text-gray-400 mb-1">Eiweiß</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
+                        <div class="bg-brand h-1.5 rounded-full" id="bar-protein" style="width: 0%"></div>
+                    </div>
+                    <p><span id="txt-protein">0</span> / <span id="goal-protein">160</span> g</p>
+                </div>
+                <!-- Fat -->
+                <div>
+                    <p class="text-gray-400 mb-1">Fett</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
+                        <div class="bg-brand h-1.5 rounded-full" id="bar-fat" style="width: 0%"></div>
+                    </div>
+                    <p><span id="txt-fat">0</span> / <span id="goal-fat">70</span> g</p>
+                </div>
+                <!-- Sugar -->
+                <div>
+                    <p class="text-gray-400 mb-1">Zucker</p>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
+                        <div class="bg-red-500 h-1.5 rounded-full" id="bar-sugar" style="width: 0%"></div>
+                    </div>
+                    <p><span id="txt-sugar">0</span> / <span id="goal-sugar">50</span> g</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Supplements Card -->
+        <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-lg">Nahrungsergänzung</h2>
+                <span class="text-xs text-gray-400">Heute</span>
+            </div>
+            <div class="space-y-3" id="supplements-list">
+                <!-- Dynamically filled -->
+            </div>
+        </section>
+
+        <!-- Nutrition Actions -->
+        <section class="flex gap-3">
+            <button onclick="startScanner()" class="flex-1 bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition">
+                📷 Barcode scannen
+            </button>
+            <button onclick="openManualModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition">
+                ✍️ Manuell eintragen
+            </button>
+        </section>
+
+        <!-- Food List -->
+        <section class="bg-cardbg rounded-2xl p-5 border border-gray-800 shadow-lg min-h-[150px]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-lg">Ernährung</h2>
+            </div>
+            <div id="food-list" class="space-y-3">
+                <!-- Foods go here -->
+                <p class="text-center text-gray-500 text-sm py-4">Noch nichts eingetragen für heute.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scanner Modal -->
+    <div id="scanner-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
+        <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700">
+            <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="font-bold">Barcode scannen</h3>
+                <button onclick="stopScanner()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div id="reader" class="w-full bg-black"></div>
+            <div class="p-4 text-center text-sm text-gray-400" id="scanner-status">
+                Kamera auf den Barcode richten...
+            </div>
+        </div>
+    </div>
+
+    <!-- Amount / Manual Entry Modal -->
+    <div id="manual-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
+        <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700 p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg" id="modal-title">Lebensmittel hinzufügen</h3>
+                <button onclick="closeModals()" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            
+            <input type="text" id="food-name" placeholder="Name (z.B. Haferflocken)" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white mb-3 focus:outline-none focus:border-brand">
+            
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Menge (g / ml)</label>
+                    <input type="number" id="food-amount" value="100" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand" oninput="calculatePreview()">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Kalorien (kcal pro 100g)</label>
+                    <input type="number" id="food-kcal-100" placeholder="kcal" class="w-full bg-appbg border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-brand" oninput="calculatePreview()">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-4 gap-2 mb-4">
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Kohlenh.</label>
+                    <input type="number" id="food-carbs-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Eiweiß</label>
+                    <input type="number" id="food-prot-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Fett</label>
+                    <input type="number" id="food-fat-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 ml-1">Zucker</label>
+                    <input type="number" id="food-sugar-100" placeholder="g" class="w-full bg-appbg border border-gray-700 rounded-lg p-2 text-white text-sm" oninput="calculatePreview()">
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-3 mb-4 text-sm flex justify-between items-center border border-gray-700">
+                <span class="text-gray-300">Wird hinzugefügt:</span>
+                <span class="font-bold text-brand" id="preview-kcal">0 kcal</span>
+            </div>
+
+            <button onclick="saveFood()" class="w-full bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl transition">
+                Speichern
+            </button>
+        </div>
+    </div>
+
+    <!-- Goals Modal -->
+    <div id="goals-modal" class="hidden fixed inset-0 modal-bg z-50 flex flex-col justify-center items-center p-4">
+        <div class="bg-cardbg w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-gray-700 p-5">
+            <h3 class="font-bold text-lg mb-4">Tägliche Ziele anpassen</h3>
+            
+            <div class="space-y-3 mb-5">
+                <div class="flex justify-between items-center">
+                    <label class="text-sm">Kalorien (kcal)</label>
+                    <input type="number" id="set-goal-kcal" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm">Kohlenhydrate (g)</label>
+                    <input type="number" id="set-goal-carbs" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm">Eiweiß (g)</label>
+                    <input type="number" id="set-goal-prot" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm">Fett (g)</label>
+                    <input type="number" id="set-goal-fat" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm">Zucker (g) Limit</label>
+                    <input type="number" id="set-goal-sugar" class="bg-appbg border border-gray-700 rounded-lg p-2 w-24 text-right text-white">
+                </div>
+            </div>
+
+            <button onclick="saveGoals()" class="w-full bg-brand hover:bg-brandlight text-black font-bold py-3 rounded-xl transition">
+                Ziele speichern
+            </button>
+            <button onclick="closeModals()" class="w-full mt-2 bg-transparent text-gray-400 py-2 rounded-xl">Abbrechen</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const TODAY = new Date().toISOString().split('T')[0];
+        
+        let state = {
+            date: TODAY,
+            goals: { kcal: 2400, carbs: 250, protein: 160, fat: 70, sugar: 50 }, // Angepasst auf ~80kg
+            supps: {
+                creatine: { name: 'Kreatin (5g)', done: false },
+                vitD: { name: 'Vitamin D3+K2', done: false },
+                magnesium: { name: 'Magnesium', done: false },
+                omega3: { name: 'Omega-3', done: false }
+            },
+            foods: []
+        };
+
+        let html5QrcodeScanner = null;
+
+        // --- Initialization ---
+        function init() {
+            loadState();
+            renderUI();
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('nutriTrackerState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.date === TODAY) {
+                    state = parsed;
+                } else {
+                    // Neuer Tag -> reset foods and supps, keep goals
+                    state.goals = parsed.goals || state.goals;
+                    saveState(); 
+                }
+            } else {
+                saveState();
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('nutriTrackerState', JSON.stringify(state));
+        }
+
+        // --- UI Rendering ---
+        function renderUI() {
+            let totalKcal = 0, totalCarbs = 0, totalProt = 0, totalFat = 0, totalSugar = 0;
+            
+            // Render Foods
+            const foodListEl = document.getElementById('food-list');
+            foodListEl.innerHTML = '';
+            
+            if(state.foods.length === 0) {
+                foodListEl.innerHTML = '<p class="text-center text-gray-500 text-sm py-4">Noch nichts eingetragen für heute.</p>';
+            } else {
+                state.foods.forEach((food, index) => {
+                    const k = (food.kcal100 * food.amount / 100).toFixed(0);
+                    const p = (food.prot100 * food.amount / 100).toFixed(1);
+                    
+                    totalKcal += parseFloat(k);
+                    totalCarbs += (food.carbs100 * food.amount / 100);
+                    totalProt += (food.prot100 * food.amount / 100);
+                    totalFat += (food.fat100 * food.amount / 100);
+                    totalSugar += (food.sugar100 * food.amount / 100);
+
+                    foodListEl.innerHTML += `
+                        <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">🍽️</div>
+                                <div>
+                                    <p class="font-bold text-sm text-white">${food.name}</p>
+                                    <p class="text-xs text-gray-400">${food.amount}g • ${k} kcal • ${p}g EW</p>
+                                </div>
+                            </div>
+                            <button onclick="deleteFood(${index})" class="text-gray-500 hover:text-red-500">🗑️</button>
+                        </div>
+                    `;
+                });
+            }
+
+            // Update Dashboard Values
+            document.getElementById('cal-eaten').innerText = totalKcal.toFixed(0);
+            let calLeft = state.goals.kcal - totalKcal;
+            document.getElementById('cal-left').innerText = Math.max(0, calLeft).toFixed(0);
+            
+            // Circular Progress
+            let calPercent = Math.min(100, (totalKcal / state.goals.kcal) * 100);
+            document.getElementById('cal-circle').setAttribute('stroke-dasharray', `${calPercent}, 100`);
+            document.getElementById('cal-circle').setAttribute('stroke', calPercent >= 100 ? '#ef4444' : '#10b981'); // Red if over
+
+            // Linear Progress Bars
+            updateBar('carbs', totalCarbs, state.goals.carbs);
+            updateBar('protein', totalProt, state.goals.protein);
+            updateBar('fat', totalFat, state.goals.fat);
+            
+            // Sugar logic (red bar if over limit)
+            let sugarPercent = Math.min(100, (totalSugar / state.goals.sugar) * 100);
+            document.getElementById('bar-sugar').style.width = `${sugarPercent}%`;
+            document.getElementById('txt-sugar').innerText = totalSugar.toFixed(0);
+            document.getElementById('goal-sugar').innerText = state.goals.sugar;
+
+            // Render Supplements
+            const suppListEl = document.getElementById('supplements-list');
+            suppListEl.innerHTML = '';
+            for (const [key, supp] of Object.entries(state.supps)) {
+                suppListEl.innerHTML += `
+                    <label class="flex items-center justify-between p-3 bg-gray-800 rounded-xl cursor-pointer hover:bg-gray-700 transition">
+                        <span class="${supp.done ? 'text-gray-400 line-through' : 'text-white'} font-medium text-sm">${supp.name}</span>
+                        <input type="checkbox" ${supp.done ? 'checked' : ''} onchange="toggleSupp('${key}')" class="w-5 h-5 accent-brand bg-gray-700 border-gray-600 rounded focus:ring-brand">
+                    </label>
+                `;
+            }
+        }
+
+        function updateBar(macro, current, goal) {
+            let percent = Math.min(100, (current / goal) * 100);
+            document.getElementById(`bar-${macro}`).style.width = `${percent}%`;
+            document.getElementById(`txt-${macro}`).innerText = current.toFixed(0);
+            document.getElementById(`goal-${macro}`).innerText = goal;
+        }
+
+        // --- Interactions ---
+        function toggleSupp(key) {
+            state.supps[key].done = !state.supps[key].done;
+            saveState();
+            renderUI();
+        }
+
+        function deleteFood(index) {
+            state.foods.splice(index, 1);
+            saveState();
+            renderUI();
+        }
+
+        // --- Modals & Forms ---
+        function closeModals() {
+            document.getElementById('scanner-modal').classList.add('hidden');
+            document.getElementById('manual-modal').classList.add('hidden');
+            document.getElementById('goals-modal').classList.add('hidden');
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(e => console.log(e));
+                html5QrcodeScanner = null;
+            }
+        }
+
+        function openManualModal(product = null) {
+            document.getElementById('manual-modal').classList.remove('hidden');
+            if (product) {
+                document.getElementById('food-name').value = product.name;
+                document.getElementById('food-kcal-100').value = product.kcal;
+                document.getElementById('food-carbs-100').value = product.carbs;
+                document.getElementById('food-prot-100').value = product.protein;
+                document.getElementById('food-fat-100').value = product.fat;
+                document.getElementById('food-sugar-100').value = product.sugar;
+                document.getElementById('food-amount').value = 100;
+            } else {
+                document.getElementById('food-name').value = '';
+                document.getElementById('food-kcal-100').value = '';
+                document.getElementById('food-carbs-100').value = '';
+                document.getElementById('food-prot-100').value = '';
+                document.getElementById('food-fat-100').value = '';
+                document.getElementById('food-sugar-100').value = '';
+                document.getElementById('food-amount').value = 100;
+            }
+            calculatePreview();
+        }
+
+        function calculatePreview() {
+            const amount = parseFloat(document.getElementById('food-amount').value) || 0;
+            const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
+            const total = (kcal100 * amount / 100).toFixed(0);
+            document.getElementById('preview-kcal').innerText = `${total} kcal`;
+        }
+
+        function saveFood() {
+            const name = document.getElementById('food-name').value || 'Unbekanntes Lebensmittel';
+            const amount = parseFloat(document.getElementById('food-amount').value) || 100;
+            const kcal100 = parseFloat(document.getElementById('food-kcal-100').value) || 0;
+            const carbs100 = parseFloat(document.getElementById('food-carbs-100').value) || 0;
+            const prot100 = parseFloat(document.getElementById('food-prot-100').value) || 0;
+            const fat100 = parseFloat(document.getElementById('food-fat-100').value) || 0;
+            const sugar100 = parseFloat(document.getElementById('food-sugar-100').value) || 0;
+
+            state.foods.push({ name, amount, kcal100, carbs100, prot100, fat100, sugar100 });
+            saveState();
+            closeModals();
+            renderUI();
+        }
+
+        function openGoalsModal() {
+            document.getElementById('goals-modal').classList.remove('hidden');
+            document.getElementById('set-goal-kcal').value = state.goals.kcal;
+            document.getElementById('set-goal-carbs').value = state.goals.carbs;
+            document.getElementById('set-goal-prot').value = state.goals.protein;
+            document.getElementById('set-goal-fat').value = state.goals.fat;
+            document.getElementById('set-goal-sugar').value = state.goals.sugar;
+        }
+
+        function saveGoals() {
+            state.goals.kcal = parseFloat(document.getElementById('set-goal-kcal').value) || 2400;
+            state.goals.carbs = parseFloat(document.getElementById('set-goal-carbs').value) || 250;
+            state.goals.protein = parseFloat(document.getElementById('set-goal-prot').value) || 160;
+            state.goals.fat = parseFloat(document.getElementById('set-goal-fat').value) || 70;
+            state.goals.sugar = parseFloat(document.getElementById('set-goal-sugar').value) || 50;
+            saveState();
+            closeModals();
+            renderUI();
+        }
+
+        // --- Barcode Scanner & API ---
+        function startScanner() {
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            document.getElementById('scanner-status').innerText = 'Kamera wird gestartet...';
+            
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+            
+            html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+            .then(() => { document.getElementById('scanner-status').innerText = 'Suche Barcode...'; })
+            .catch((err) => {
+                document.getElementById('scanner-status').innerText = 'Fehler beim Kamerazugriff.';
+                console.log(err);
+            });
+        }
+
+        function stopScanner() {
+            closeModals();
+        }
+
+        let isScanning = false;
+        function onScanSuccess(decodedText, decodedResult) {
+            if(isScanning) return;
+            isScanning = true;
+            document.getElementById('scanner-status').innerText = `Gefunden: ${decodedText}. Lade Daten...`;
+            
+            html5QrcodeScanner.stop().then(() => {
+                fetchProductData(decodedText);
+            }).catch(err => console.log(err));
+        }
+
+        function onScanFailure(error) {
+            // constantly fires, ignore
+        }
+
+        async function fetchProductData(barcode) {
+            try {
+                const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+                const data = await res.json();
+                
+                if (data.status === 1 && data.product) {
+                    const p = data.product;
+                    const nut = p.nutriments || {};
+                    
+                    const productData = {
+                        name: p.product_name || "Unbekanntes Produkt",
+                        kcal: nut['energy-kcal_100g'] || 0,
+                        carbs: nut['carbohydrates_100g'] || 0,
+                        protein: nut['proteins_100g'] || 0,
+                        fat: nut['fat_100g'] || 0,
+                        sugar: nut['sugars_100g'] || 0
+                    };
+                    
+                    closeModals();
+                    openManualModal(productData);
+                } else {
+                    alert('Produkt nicht in der Datenbank gefunden. Bitte manuell eingeben.');
+                    closeModals();
+                    openManualModal();
+                }
+            } catch(e) {
+                alert('Fehler bei der Internetverbindung.');
+                closeModals();
+                openManualModal();
+            } finally {
+                isScanning = false;
+            }
+        }
+
+        // Boot
+        window.onload = init;
+    </script>
+</body>
+</html>
